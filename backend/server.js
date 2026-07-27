@@ -12,7 +12,10 @@ const exportRoutes = require("./routes/exports");
 const app = express();
 
 // middlewares
-app.use(cors());
+app.use(cors({
+  origin: ["https://flexops.site", "https://www.flexops.site", "https://flexops-gym.netlify.app"],
+  credentials: true
+}));
 app.use(express.json());
 
 // DB connect
