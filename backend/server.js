@@ -47,7 +47,6 @@ app.use("/api/plans", planRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/reports", reportRoutes);
-app.use("/api/payments", paymentRoutes);
 app.use("/api/trainers", trainerRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/penalty", penaltyRoutes);
