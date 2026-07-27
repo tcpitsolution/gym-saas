@@ -1,19 +1,11 @@
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  family: 4,
-});
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendEmail(to, subject, html) {
   if (!to) return; // skip silently if member has no email on file
   try {
-    await transporter.sendMail({
-      from: `"FlexOps Gym" <${process.env.EMAIL_USER}>`,
+    await resend.emails.send({
+      from: "FlexOps Gym <onboarding@resend.dev>",
       to,
       subject,
       html,
@@ -73,7 +65,15 @@ function ownerSummaryEmail(expiredMembers, gymName) {
   };
 }
 
-function newMemberWelcomeEmail(member, gymName, planName, membershipEnd, amount, mode, trainerId) {
+function newMemberWelcomeEmail(
+  member,
+  gymName,
+  planName,
+  membershipEnd,
+  amount,
+  mode,
+  trainerId,
+) {
   return {
     subject: `Welcome to ${gymName}! Your membership is confirmed 🎉`,
     html: `
@@ -178,8 +178,8 @@ function demoRequestAdminEmail(ownerName, gymName, email, phone, message) {
           <tr><td style="padding:8px 0;color:#888;font-size:14px;">Gym Name</td><td style="padding:8px 0;font-weight:600;font-size:14px;">${gymName}</td></tr>
           <tr><td style="padding:8px 0;color:#888;font-size:14px;">Owner Name</td><td style="padding:8px 0;font-size:14px;">${ownerName}</td></tr>
           <tr><td style="padding:8px 0;color:#888;font-size:14px;">Email</td><td style="padding:8px 0;font-size:14px;">${email}</td></tr>
-          <tr><td style="padding:8px 0;color:#888;font-size:14px;">Phone</td><td style="padding:8px 0;font-size:14px;">${phone || '—'}</td></tr>
-          ${message ? `<tr><td style="padding:8px 0;color:#888;font-size:14px;">Message</td><td style="padding:8px 0;font-size:14px;">${message}</td></tr>` : ''}
+          <tr><td style="padding:8px 0;color:#888;font-size:14px;">Phone</td><td style="padding:8px 0;font-size:14px;">${phone || "—"}</td></tr>
+          ${message ? `<tr><td style="padding:8px 0;color:#888;font-size:14px;">Message</td><td style="padding:8px 0;font-size:14px;">${message}</td></tr>` : ""}
         </table>
         <p style="color:#888;font-size:13px;">Login to the admin panel to review and approve this request.</p>
       </div>
