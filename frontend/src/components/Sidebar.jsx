@@ -1,16 +1,45 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { useState } from "react";
 
-const navItems = [
-  { path: "/dashboard", label: "Overview", icon: "⚡" },
-  { path: "/members/new", label: "Add Member", icon: "➕" },
-  { path: "/members", label: "Members", icon: "👥" },
-  { path: "/reports", label: "Reports", icon: "📊" },
+const navGroups = [
+  {
+    label: "Main",
+    items: [{ path: "/dashboard", label: "Overview", icon: "⚡" }],
+  },
+  {
+    label: "Members",
+    items: [
+      { path: "/members", label: "Members", icon: "👥" },
+      { path: "/members/new", label: "Add Member", icon: "➕" },
+      { path: "/attendance", label: "Attendance", icon: "✅" },
+    ],
+  },
+  {
+    label: "Business",
+    items: [
+      { path: "/plans", label: "Plans", icon: "📦" },
+      { path: "/payments", label: "Payments", icon: "💳" },
+    ],
+  },
+  {
+    label: "Staff",
+    items: [{ path: "/trainers", label: "Trainers", icon: "🏋️" }],
+  },
+  {
+    label: "Insights",
+    items: [
+      { path: "/reports", label: "Reports", icon: "📊" },
+      { path: "/ask-ai", label: "Ask AI", icon: "🤖" },
+    ],
+  },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, gymName } = useAuth();
+  const { dark, toggle } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -18,77 +47,138 @@ export default function Sidebar() {
     navigate("/login");
   };
 
-  return (
+  const sidebarContent = (
     <aside
-      className="w-60 min-h-screen flex flex-col shrink-0 animate-fade-in"
+      className="w-56 min-h-screen flex flex-col shrink-0"
       style={{
-        background: "linear-gradient(180deg, #111416 0%, #0E1011 100%)",
-        borderRight: "1px solid rgba(255,255,255,0.06)",
+        background: "var(--bg-card)",
+        borderRight: "1px solid var(--border-subtle)",
         fontFamily: "var(--font-body)",
+        transition: "background 0.3s ease",
       }}
     >
-      {/* Logo */}
-      <div className="px-6 py-6 border-b" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-        <Link to="/">
-          <span style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", color: "#fff", letterSpacing: "-0.02em" }}>
+      <div className="px-5 py-5 border-b flex items-center justify-between" style={{ borderColor: "var(--border-subtle)" }}>
+        <Link to="/" onClick={onClose}>
+          <span style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", color: "var(--text-primary)" }}>
             FLEX<span style={{ color: "var(--brand-orange)" }}>OPS</span>
           </span>
         </Link>
-        <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.3)" }}>Gym Management</p>
+        {/* Close button — mobile only */}
+        <button
+          className="lg:hidden p-1 rounded-lg"
+          onClick={onClose}
+          style={{ color: "var(--text-faint)" }}
+        >
+          ✕
+        </button>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 py-5 px-3">
-        <p className="text-xs font-semibold px-3 mb-3" style={{ color: "rgba(255,255,255,0.25)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-          Menu
+      {gymName && (
+        <p className="px-5 pt-2 text-xs truncate" style={{ color: "var(--text-faint)" }}>
+          {gymName}
         </p>
-        {navItems.map((item, i) => {
-          const active = location.pathname === item.path;
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 text-sm font-medium transition-all duration-200"
-              style={{
-                animationDelay: `${i * 60}ms`,
-                background: active ? "rgba(255,90,54,0.12)" : "transparent",
-                color: active ? "#fff" : "rgba(255,255,255,0.45)",
-                borderLeft: active ? "2px solid var(--brand-orange)" : "2px solid transparent",
-                boxShadow: active ? "0 0 20px rgba(255,90,54,0.08)" : "none",
-              }}
-              onMouseEnter={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                  e.currentTarget.style.color = "#fff";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color = "rgba(255,255,255,0.45)";
-                }
-              }}
+      )}
+
+      <nav className="flex-1 py-4 overflow-y-auto">
+        {navGroups.map((group) => (
+          <div key={group.label} className="mb-4">
+            <p
+              className="px-5 text-[10px] font-semibold uppercase tracking-widest mb-1.5"
+              style={{ color: "var(--text-faint)" }}
             >
-              <span className="text-base">{item.icon}</span>
-              {item.label}
-            </Link>
-          );
-        })}
+              {group.label}
+            </p>
+            {group.items.map((item) => {
+              const active = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  className="flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl mb-0.5 text-sm font-medium transition-all duration-150"
+                  style={{
+                    background: active ? "rgba(255,90,54,0.12)" : "transparent",
+                    color: active ? "var(--text-primary)" : "var(--text-muted)",
+                    borderLeft: active ? "2px solid var(--brand-orange)" : "2px solid transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!active) {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                      e.currentTarget.style.color = "var(--text-primary)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "var(--text-muted)";
+                    }
+                  }}
+                >
+                  <span className="text-base">{item.icon}</span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
-      {/* Logout */}
-      <div className="px-3 pb-6">
-        <div className="glow-divider mb-4" />
+      <div className="px-3 pb-5">
+        <div className="glow-divider mb-3" />
+        {/* Theme toggle */}
+        <button
+          onClick={toggle}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl w-full text-sm font-medium transition-all duration-150 mb-1"
+          style={{ color: "var(--text-faint)", background: "transparent" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--bg-card-2)";
+            e.currentTarget.style.color = "var(--text-primary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "var(--text-faint)";
+          }}
+        >
+          <span>{dark ? "☀️" : "🌙"}</span>
+          {dark ? "Light Mode" : "Dark Mode"}
+        </button>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-sm font-medium transition-all duration-200"
-          style={{ color: "rgba(255,255,255,0.35)" }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = "#ff6b6b"; e.currentTarget.style.background = "rgba(255,107,107,0.08)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.35)"; e.currentTarget.style.background = "transparent"; }}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl w-full text-sm font-medium transition-all duration-150"
+          style={{ color: "var(--text-faint)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = "#ff6b6b";
+            e.currentTarget.style.background = "rgba(255,107,107,0.08)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = "var(--text-faint)";
+            e.currentTarget.style.background = "transparent";
+          }}
         >
           <span>⎋</span> Log out
         </button>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex">{sidebarContent}</div>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0"
+            style={{ background: "rgba(0,0,0,0.5)" }}
+            onClick={onClose}
+          />
+          {/* Drawer */}
+          <div className="relative z-10 animate-fade-left">{sidebarContent}</div>
+        </div>
+      )}
+    </>
   );
 }

@@ -28,6 +28,52 @@ router.get("/members", authMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// Generic CSV export by report type (reuses same data as /reports/data)
+router.get("/report", authMiddleware, async (req, res) => {
+  try {
+    const { gymId } = req.user;
+    const { type = "revenue" } = req.query;
+
+    const axios_internal_note = null; // placeholder, real logic below reuses models directly
+    const Member = require("../models/Member");
+    const Payment = require("../models/Payment");
+    const Attendance = require("../models/Attendance");
+
+    let rows = [];
+    if (type === "revenue") {
+      const data = await Payment.find({ gymId }).populate("memberId", "name").sort({ date: -1 }).limit(500);
+      rows = data.map((r) => ({
+        name: r.memberId?.name || "—",
+        amount: r.amount,
+        mode: r.mode,
+        status: r.status,
+        date: new Date(r.date).toLocaleDateString("en-IN"),
+      }));
+    } else if (type === "attendance") {
+      const data = await Attendance.find({ gymId }).populate("memberId", "name phone").sort({ checkInTime: -1 }).limit(500);
+      rows = data.map((r) => ({
+        name: r.memberId?.name || "—",
+        phone: r.memberId?.phone || "—",
+        date: new Date(r.checkInTime).toLocaleDateString("en-IN"),
+      }));
+    } else if (type === "members") {
+      const data = await Member.find({ gymId }).populate("currentPlan", "name").sort({ createdAt: -1 });
+      rows = data.map((r) => ({
+        name: r.name,
+        phone: r.phone,
+        plan: r.currentPlan?.name || "—",
+        status: r.status,
+      }));
+    }
+
+    const csv = toCSV(rows);
+    res.header("Content-Type", "text/csv");
+    res.attachment(`${type}-report.csv`);
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.get("/payments", authMiddleware, async (req, res) => {
   try {

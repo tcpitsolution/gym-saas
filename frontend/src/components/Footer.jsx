@@ -62,7 +62,7 @@ export default function Footer() {
               Contact
             </p>
             <ul className="space-y-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-              <li>hello@flexops.in</li>
+              <li>soutiontcp@gmail.com</li>
               <li>Ludhiana, Punjab, India</li>
             </ul>
           </div>

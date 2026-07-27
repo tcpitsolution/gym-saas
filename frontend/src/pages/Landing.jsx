@@ -18,7 +18,7 @@ const steps = [
 
 export default function Landing() {
   return (
-    <div className="bg-[#0E1011] text-white overflow-x-hidden" style={{ fontFamily: "var(--font-body)" }}>
+    <div className="landing-page overflow-x-hidden">
       {/* Navbar */}
       <header
         className="sticky top-0 z-50 animate-slide-top"
@@ -43,7 +43,7 @@ export default function Landing() {
               onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,0.55)"}>
               Log in
             </Link>
-            <Link to="/signup" className="btn-primary" style={{ padding: "0.55rem 1.25rem", fontSize: "0.875rem" }}>
+            <Link to="/login" className="btn-primary" style={{ padding: "0.55rem 1.25rem", fontSize: "0.875rem" }}>
               Get Started
             </Link>
           </div>
@@ -56,16 +56,16 @@ export default function Landing() {
 
         <div className="relative z-10">
           <p className="label-tag mb-4 animate-fade-up">Built for Indian Gym Owners</p>
-          <h1 className="display-xl mb-6 animate-fade-up delay-100" style={{ fontFamily: "var(--font-display)" }}>
+          <h1 className="display-xl mb-6 animate-fade-up delay-100" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
             Run your gym.
             <br />
             <span className="text-shimmer">Not spreadsheets.</span>
           </h1>
-          <p className="body-lg mb-8 max-w-md animate-fade-up delay-200">
+          <p className="mb-8 max-w-md animate-fade-up delay-200 text-lg" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
             Members, billing, penalties, reminders, and reports — one system that replaces the register and the guesswork.
           </p>
           <div className="flex gap-4 animate-fade-up delay-300">
-            <Link to="/signup" className="btn-primary animate-pulse-glow">Start Free →</Link>
+            <Link to="/login" className="btn-primary animate-pulse-glow">Get Started →</Link>
             <a href="#features" className="btn-outline">See Features</a>
           </div>
         </div>
@@ -119,16 +119,16 @@ export default function Landing() {
       <section id="features" className="max-w-6xl mx-auto px-6 py-20">
         <Animate variant="fadeUp">
           <p className="label-tag mb-3">What's inside</p>
-          <h2 className="display-md mb-3" style={{ fontFamily: "var(--font-display)" }}>Everything your gym needs</h2>
-          <p className="body-md mb-12">One system, six jobs done properly.</p>
+          <h2 className="display-md mb-3" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>Everything your gym needs</h2>
+          <p className="mb-12 text-sm" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.65 }}>One system, six jobs done properly.</p>
         </Animate>
         <div className="grid md:grid-cols-3 gap-6">
           {features.map((f, i) => (
             <Animate key={f.title} variant="fadeUp" delay={i * 100}>
               <div className="card-premium h-full">
                 <span className="text-3xl animate-float inline-block">{f.icon}</span>
-                <h3 className="mt-4 mb-2 text-lg" style={{ fontWeight: 700 }}>{f.title}</h3>
-                <p className="body-md text-sm">{f.desc}</p>
+                <h3 className="mt-4 mb-2 text-lg" style={{ fontWeight: 700, color: "#ffffff" }}>{f.title}</h3>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)", lineHeight: 1.65 }}>{f.desc}</p>
               </div>
             </Animate>
           ))}
@@ -140,12 +140,12 @@ export default function Landing() {
         <div className="absolute inset-0 bg-noise pointer-events-none" />
         <div className="max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-16 items-center">
           <Animate variant="fadeLeft">
-            <h2 className="display-md mb-5" style={{ fontFamily: "var(--font-display)" }}>
+            <h2 className="display-md mb-5" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
               Stop losing money to
               <br />
               <span style={{ color: "var(--brand-orange)" }}>missed renewals.</span>
             </h2>
-            <p className="body-lg mb-8">
+            <p className="mb-8 text-lg" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
               Most gyms lose 15–20% of revenue to members who quietly stop paying because no one followed up.
             </p>
             <ul className="space-y-4">
@@ -176,7 +176,7 @@ export default function Landing() {
       {/* How it works */}
       <section id="how" className="max-w-6xl mx-auto px-6 py-20">
         <Animate variant="fadeUp">
-          <h2 className="display-md mb-14" style={{ fontFamily: "var(--font-display)" }}>How it works</h2>
+          <h2 className="display-md mb-14" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>How it works</h2>
         </Animate>
         <div className="grid md:grid-cols-3 gap-10">
           {steps.map((s, i) => (
@@ -185,8 +185,8 @@ export default function Landing() {
                 <p style={{ fontFamily: "var(--font-display)", fontSize: "3.5rem", lineHeight: 1, color: "transparent", WebkitTextStroke: "2px #FF5A36", opacity: 0.7 }}>
                   {s.n}
                 </p>
-                <h3 className="text-lg mt-4 mb-2" style={{ fontWeight: 700 }}>{s.title}</h3>
-                <p className="body-md text-sm">{s.desc}</p>
+                <h3 className="text-lg mt-4 mb-2" style={{ fontWeight: 700, color: "#ffffff" }}>{s.title}</h3>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.65 }}>{s.desc}</p>
               </div>
             </Animate>
           ))}
@@ -200,11 +200,11 @@ export default function Landing() {
             <div className="absolute inset-0 bg-noise pointer-events-none" />
             <div className="absolute -top-16 -right-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
             <div className="relative z-10">
-              <h2 className="display-md mb-4" style={{ fontFamily: "var(--font-display)" }}>Your gym, running itself.</h2>
+              <h2 className="display-md mb-4" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>Your gym, running itself.</h2>
               <p className="mb-8 text-lg" style={{ color: "rgba(255,255,255,0.85)" }}>Free to start. No card required.</p>
-              <Link to="/signup" className="inline-block bg-white font-bold px-10 py-3.5 rounded-xl hover:bg-white/90 transition-all hover:scale-105"
+              <Link to="/login" className="inline-block bg-white font-bold px-10 py-3.5 rounded-xl hover:bg-white/90 transition-all hover:scale-105"
                 style={{ color: "#0E1011", fontFamily: "var(--font-body)", fontSize: "1rem" }}>
-                Create Free Account →
+                Get Started →
               </Link>
             </div>
           </div>

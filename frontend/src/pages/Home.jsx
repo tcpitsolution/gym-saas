@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Animate from "../components/Animate";
+import appPreview from "../assets/gym1.png";
 
 const featurePreview = [
   { icon: "👥", title: "Member Management", desc: "Track every member, plan, and renewal in one place." },
@@ -18,7 +19,7 @@ const stats = [
 
 export default function Home() {
   return (
-    <div className="bg-[#0E1011] text-white overflow-x-hidden" style={{ fontFamily: "var(--font-body)" }}>
+    <div className="landing-page overflow-x-hidden">
       <Navbar />
 
       {/* ── Hero ── */}
@@ -38,13 +39,13 @@ export default function Home() {
             <p className="label-tag animate-fade-up">Built for Indian Gym Owners</p>
             <h1
               className="display-xl mt-4 mb-6 animate-fade-up delay-100"
-              style={{ fontFamily: "var(--font-display)" }}
+              style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}
             >
               Run your gym.
               <br />
               <span className="text-shimmer">Not spreadsheets.</span>
             </h1>
-            <p className="body-lg mb-8 animate-fade-up delay-200">
+            <p className="mb-8 animate-fade-up delay-200 text-lg" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
               Members, billing, penalties, reminders, and reports — one system
               that replaces the register and the guesswork.
             </p>
@@ -63,14 +64,42 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0E1011] to-transparent" />
       </section>
 
+      {/* ── App Preview Screenshot ── */}
+      <section className="max-w-6xl mx-auto px-6 py-16">
+        <Animate variant="fadeUp">
+          <p className="label-tag mb-3 text-center">Live Dashboard</p>
+          <h2 className="display-md mb-3 text-center" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
+            See it in action
+          </h2>
+          <p className="mb-10 text-center max-w-lg mx-auto text-sm" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.65 }}>
+            A real look at what your gym dashboard looks like — clean, fast, and built for daily use.
+          </p>
+          <div
+            className="rounded-2xl overflow-hidden relative"
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 0 80px rgba(255,90,54,0.12), 0 32px 64px rgba(0,0,0,0.5)",
+            }}
+          >
+            <img
+              src={appPreview}
+              alt="FlexOps Dashboard Preview"
+              className="w-full h-auto block"
+              style={{ maxHeight: "520px", objectFit: "cover", objectPosition: "top" }}
+            />
+            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0E1011] to-transparent" />
+          </div>
+        </Animate>
+      </section>
+
       {/* ── Feature Preview ── */}
       <section className="max-w-6xl mx-auto px-6 py-24">
         <Animate variant="fadeUp">
           <p className="label-tag mb-3">What's inside</p>
-          <h2 className="display-md mb-3" style={{ fontFamily: "var(--font-display)" }}>
+          <h2 className="display-md mb-3" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
             Everything your gym needs
           </h2>
-          <p className="body-md mb-12 max-w-lg">
+          <p className="mb-12 max-w-lg text-sm" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.65 }}>
             A quick look — full details on the Features page.
           </p>
         </Animate>
@@ -79,10 +108,10 @@ export default function Home() {
             <Animate key={f.title} variant="fadeUp" delay={i * 120}>
               <div className="card-premium h-full">
                 <span className="text-3xl animate-float inline-block">{f.icon}</span>
-                <h3 className="font-semibold text-lg mt-4 mb-2" style={{ fontFamily: "var(--font-body)", fontWeight: 700 }}>
+                <h3 className="font-semibold text-lg mt-4 mb-2" style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: "#ffffff" }}>
                   {f.title}
                 </h3>
-                <p className="body-md text-sm">{f.desc}</p>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)", lineHeight: 1.65 }}>{f.desc}</p>
               </div>
             </Animate>
           ))}
@@ -97,7 +126,7 @@ export default function Home() {
             <Animate key={s.label} variant="scaleUp" delay={i * 100}>
               <div className="text-center">
                 <p className={`stat-number ${s.color} delay-${i * 100}`}>{s.value}</p>
-                <p className="text-xs text-white/45 mt-2 leading-relaxed">{s.label}</p>
+                <p className="text-xs mt-2 leading-relaxed" style={{ color: "rgba(255,255,255,0.5)" }}>{s.label}</p>
               </div>
             </Animate>
           ))}
@@ -107,19 +136,19 @@ export default function Home() {
       {/* ── Why Us ── */}
       <section className="max-w-6xl mx-auto px-6 py-24 grid md:grid-cols-2 gap-16 items-center">
         <Animate variant="fadeLeft">
-          <h2 className="display-md mb-5" style={{ fontFamily: "var(--font-display)" }}>
+          <h2 className="display-md mb-5" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
             Stop losing money to
             <br />
-            <span className="text-[#FF5A36]">missed renewals.</span>
+            <span style={{ color: "#FF5A36" }}>missed renewals.</span>
           </h2>
-          <p className="body-lg mb-8">
+          <p className="mb-8 text-lg" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
             Most gyms lose 15–20% of revenue to members who quietly stop
             paying because no one followed up. Automated reminders fix that —
             quietly, in the background.
           </p>
           <ul className="space-y-4">
             {["No more paper registers or Excel", "Reminders sent automatically", "Know your revenue in real time"].map((item, i) => (
-              <li key={item} className="flex items-center gap-3 text-white/75 font-medium animate-fade-up" style={{ animationDelay: `${i * 100}ms` }}>
+              <li key={item} className="flex items-center gap-3 font-medium animate-fade-up" style={{ color: "rgba(255,255,255,0.75)", animationDelay: `${i * 100}ms` }}>
                 <span className="w-5 h-5 rounded-full bg-[#2DD4C4]/15 flex items-center justify-center text-[#2DD4C4] text-xs font-bold shrink-0">✓</span>
                 {item}
               </li>
@@ -130,15 +159,15 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-4">
             <div className="card-premium text-center py-8">
               <p className="stat-number text-[#FF5A36]">20%</p>
-              <p className="text-xs text-white/45 mt-2">Revenue lost to missed renewals</p>
+              <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.5)" }}>Revenue lost to missed renewals</p>
             </div>
             <div className="card-premium text-center py-8">
-              <p className="stat-number text-[#2DD4C4]">2 min</p>
-              <p className="text-xs text-white/45 mt-2">To set up your gym account</p>
+              <p className="stat-number" style={{ color: "#2DD4C4" }}>2 min</p>
+              <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.5)" }}>To set up your gym account</p>
             </div>
             <div className="card-premium col-span-2 text-center py-6">
-              <p className="stat-number text-white">₹0</p>
-              <p className="text-xs text-white/45 mt-2">Setup fee, ever</p>
+              <p className="stat-number" style={{ color: "#ffffff" }}>₹0</p>
+              <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.5)" }}>Setup fee, ever</p>
             </div>
           </div>
         </Animate>
@@ -152,7 +181,7 @@ export default function Home() {
             <div className="absolute -top-16 -right-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
             <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-black/20 rounded-full blur-3xl" />
             <div className="relative z-10">
-              <h2 className="display-md mb-4" style={{ fontFamily: "var(--font-display)" }}>
+              <h2 className="display-md mb-4" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
                 Your gym, running itself.
               </h2>
               <p className="text-white/85 mb-8 text-lg">Free to start. No card required.</p>

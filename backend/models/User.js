@@ -12,6 +12,13 @@ const userSchema = new mongoose.Schema(
       default: "staff",
     },
     active: { type: Boolean, default: true },
+    phone: { type: String, default: "" },
+    alternatePhone: { type: String, default: "" },
+    address: { type: String, default: "" },
+    aadharNumber: { type: String, default: "" },
+    panNumber: { type: String, default: "" },
+    joiningDate: { type: Date },
+    otpVerifiedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

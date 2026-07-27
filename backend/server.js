@@ -27,22 +27,36 @@ app.get("/health", (req, res) => {
 });
 
 // routes require
+const adminRoutes = require("./routes/admin");
 const authRoutes = require("./routes/auth");
 const planRoutes = require("./routes/plans");
 const memberRoutes = require("./routes/members");
 const attendanceRoutes = require("./routes/attendance");
 const reportRoutes = require("./routes/reports");
+const paymentRoutes = require("./routes/payments");
+const trainerRoutes = require("./routes/trainers");
+const aiRoutes = require("./routes/ai");
+const notificationsRoute = require("./routes/notifications");
+const { startMembershipCron } = require("./jobs/membershipCron");
+startMembershipCron(); 
 
 // routes mount
+app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/members", memberRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/trainers", trainerRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/penalty", penaltyRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/exports", exportRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/notifications", notificationsRoute);
+
 
 app.listen(process.env.PORT || 5000, () => {
   console.log("Server running on", process.env.PORT || 5000);

@@ -1,10 +1,5 @@
-const { Resend } = require("resend");
-
+const { sendEmail } = require("./emailService");
 const otpStore = new Map();
-
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY);
-}
 
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -13,14 +8,18 @@ function generateOtp() {
 async function sendOtp(email) {
   const otp = generateOtp();
 
-  await getResend().emails.send({
-    from: "onboarding@resend.dev",
-    to: email,
-    subject: "Your Gym SaaS Verification Code",
-    html: `<p>Your verification code is <strong>${otp}</strong>. Valid for 5 minutes.</p>`,
-  });
+  await sendEmail(
+    email,
+    "Your FlexOps Login Verification Code",
+    `<div style="font-family:sans-serif;padding:20px;">
+      <h2>FlexOps Login OTP</h2>
+      <p>Your verification code is <strong style="font-size:1.5rem;letter-spacing:4px">${otp}</strong></p>
+      <p>Valid for <strong>5 minutes</strong>. Do not share this code.</p>
+      <p style="color:#888;font-size:12px">If you didn't request this, ignore this email.</p>
+    </div>`
+  );
 
-  otpStore.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+  otpStore.set(email, { otp, expiresAt: Date.now() + 2 * 60 * 1000 });
   return { success: true };
 }
 

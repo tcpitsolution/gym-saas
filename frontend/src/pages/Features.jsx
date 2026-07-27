@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Animate from "../components/Animate";
+import screen2 from "../assets/gym2.png";
+import screen3 from "../assets/3.png";
 
 const features = [
   { icon: "👥", title: "Member Management", desc: "Add, search, and track every member — plans, renewals, expiry dates, all in one place." },
@@ -20,7 +22,7 @@ const steps = [
 
 export default function Features() {
   return (
-    <div className="bg-[#0E1011] text-white overflow-x-hidden" style={{ fontFamily: "var(--font-body)" }}>
+    <div className="landing-page overflow-x-hidden">
       <Navbar />
 
       {/* ── Header ── */}
@@ -28,12 +30,12 @@ export default function Features() {
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#2DD4C4]/6 rounded-full blur-3xl pointer-events-none" />
         <Animate variant="fadeUp">
           <p className="label-tag mb-4">Features</p>
-          <h1 className="display-xl mb-5 max-w-2xl" style={{ fontFamily: "var(--font-display)" }}>
+          <h1 className="display-xl mb-5 max-w-2xl" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
             Everything a gym owner
             <br />
             <span className="text-shimmer">actually needs.</span>
           </h1>
-          <p className="body-lg max-w-xl">
+          <p className="body-lg max-w-xl" style={{ color: "rgba(255,255,255,0.6)" }}>
             Built specifically for Indian gym owners — no bloated features you'll never use.
           </p>
         </Animate>
@@ -46,11 +48,41 @@ export default function Features() {
             <Animate key={f.title} variant="fadeUp" delay={i * 100}>
               <div className="card-premium h-full">
                 <span className="text-3xl animate-float inline-block">{f.icon}</span>
-                <h3 className="mt-4 mb-2 text-lg" style={{ fontWeight: 700 }}>{f.title}</h3>
-                <p className="body-md text-sm">{f.desc}</p>
+                <h3 className="mt-4 mb-2 text-lg" style={{ fontWeight: 700, color: "#ffffff" }}>{f.title}</h3>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)", lineHeight: 1.65 }}>{f.desc}</p>
               </div>
             </Animate>
           ))}
+        </div>
+      </section>
+
+      {/* ── Screenshots ── */}
+      <section className="max-w-6xl mx-auto px-6 pb-24">
+        <Animate variant="fadeUp">
+          <p className="label-tag mb-3">Real Screens</p>
+          <h2 className="display-md mb-10" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
+            Built for daily use
+          </h2>
+        </Animate>
+        <div className="grid md:grid-cols-2 gap-6">
+          <Animate variant="fadeLeft">
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}
+            >
+              <img src={screen2} alt="Members screen" className="w-full h-auto block" style={{ maxHeight: "320px", objectFit: "cover", objectPosition: "top" }} />
+            </div>
+            <p className="text-sm mt-3" style={{ color: "rgba(255,255,255,0.6)" }}>Member management — search, filter, track every member</p>
+          </Animate>
+          <Animate variant="fadeRight">
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}
+            >
+              <img src={screen3} alt="Reports screen" className="w-full h-auto block" style={{ maxHeight: "320px", objectFit: "cover", objectPosition: "top" }} />
+            </div>
+            <p className="text-sm mt-3" style={{ color: "rgba(255,255,255,0.6)" }}>Reports — revenue, attendance, and member trends</p>
+          </Animate>
         </div>
       </section>
 
@@ -62,12 +94,12 @@ export default function Features() {
             <span className="text-2xl animate-float inline-block">🤖</span>
             <p className="label-tag" style={{ color: "#2DD4C4" }}>AI-Powered</p>
           </div>
-          <h2 className="display-md mb-4 max-w-2xl" style={{ fontFamily: "var(--font-display)" }}>
+          <h2 className="display-md mb-4 max-w-2xl" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
             Your gym gets smarter
             <br />
             <span className="text-shimmer">every single day.</span>
           </h2>
-          <p className="body-lg max-w-xl mb-14">
+          <p className="mb-14 max-w-xl text-lg" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>
             FlexOps comes with built-in AI tools that predict problems before they happen — so you never lose a member silently.
           </p>
         </Animate>
@@ -91,8 +123,8 @@ export default function Features() {
                   🔮
                 </div>
                 <div>
-                  <h3 className="text-lg mb-2" style={{ fontWeight: 700 }}>Churn Prediction</h3>
-                  <p className="body-md text-sm">
+                  <h3 className="text-lg mb-2" style={{ fontWeight: 700, color: "#ffffff" }}>Churn Prediction</h3>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.65 }}>
                     AI automatically flags members who are likely to leave — based on attendance patterns and payment history — before their membership even expires.
                   </p>
                 </div>
@@ -122,8 +154,8 @@ export default function Features() {
                   📬
                 </div>
                 <div>
-                  <h3 className="text-lg mb-2" style={{ fontWeight: 700 }}>Smart Reminders</h3>
-                  <p className="body-md text-sm">
+                  <h3 className="text-lg mb-2" style={{ fontWeight: 700, color: "#ffffff" }}>Smart Reminders</h3>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.65 }}>
                     AI decides the best time to send renewal reminders to each member — not a generic blast, but personalized nudges that actually get read.
                   </p>
                 </div>
@@ -165,8 +197,8 @@ export default function Features() {
                 >
                   {item.icon}
                 </div>
-                <h3 className="text-base mb-2" style={{ fontWeight: 700 }}>{item.title}</h3>
-                <p className="body-md text-sm">{item.desc}</p>
+                <h3 className="text-base mb-2" style={{ fontWeight: 700, color: "#ffffff" }}>{item.title}</h3>
+                <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)", lineHeight: 1.65 }}>{item.desc}</p>
               </div>
             </Animate>
           ))}
@@ -180,7 +212,7 @@ export default function Features() {
           >
             <div className="flex items-center gap-3">
               <span className="text-2xl">✨</span>
-              <p className="font-semibold text-white">All AI features are included — no extra charge, no configuration.</p>
+              <p className="font-semibold" style={{ color: "#ffffff" }}>All AI features are included — no extra charge, no configuration.</p>
             </div>
             <span
               className="shrink-0 text-sm font-bold px-4 py-2 rounded-xl"
@@ -197,7 +229,7 @@ export default function Features() {
         <div className="absolute inset-0 bg-noise pointer-events-none" />
         <div className="max-w-6xl mx-auto px-6 py-20">
           <Animate variant="fadeUp">
-            <h2 className="display-md mb-14" style={{ fontFamily: "var(--font-display)" }}>
+            <h2 className="display-md mb-14" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
               How it works
             </h2>
           </Animate>
@@ -218,8 +250,8 @@ export default function Features() {
                   >
                     {s.n}
                   </p>
-                  <h3 className="text-lg mb-2" style={{ fontWeight: 700 }}>{s.title}</h3>
-                  <p className="body-md text-sm">{s.desc}</p>
+                  <h3 className="text-lg mb-2" style={{ fontWeight: 700, color: "#ffffff" }}>{s.title}</h3>
+                  <p className="text-sm" style={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.65 }}>{s.desc}</p>
                 </div>
               </Animate>
             ))}
@@ -230,7 +262,7 @@ export default function Features() {
       {/* ── CTA ── */}
       <section className="max-w-6xl mx-auto px-6 py-24 text-center">
         <Animate variant="scaleUp">
-          <h2 className="display-md mb-6" style={{ fontFamily: "var(--font-display)" }}>
+          <h2 className="display-md mb-6" style={{ fontFamily: "var(--font-display)", color: "#ffffff" }}>
             Ready to see it in action?
           </h2>
           <Link to="/signup" className="btn-primary animate-pulse-glow">
