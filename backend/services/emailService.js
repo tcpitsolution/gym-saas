@@ -5,7 +5,7 @@ async function sendEmail(to, subject, html) {
   if (!to) return; // skip silently if member has no email on file
   try {
     await resend.emails.send({
-      from: "FlexOps Gym <onboarding@resend.dev>",
+      from: "FlexOps Gym <noreply@flexops.site>",
       to,
       subject,
       html,
