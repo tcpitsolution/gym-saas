@@ -64,8 +64,35 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     if (email !== process.env.ADMIN_EMAIL) return res.status(400).json({ error: "Invalid credentials" });
     if (password !== process.env.ADMIN_PASSWORD) return res.status(400).json({ error: "Invalid credentials" });
+
+    // Check 24hr OTP session from request header
+    const otpVerifiedAt = req.headers["x-admin-otp-verified"];
+    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+    if (otpVerifiedAt && Number(otpVerifiedAt) > twentyFourHoursAgo) {
+      // Session still valid, skip OTP
+      const token = jwt.sign({ role: "superadmin", email }, process.env.JWT_SECRET, { expiresIn: "7d" });
+      return res.json({ token });
+    }
+
+    // Send OTP
+    const { sendOtp } = require("../services/otpService");
+    await sendOtp(email);
+    res.json({ otpRequired: true, email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin verify OTP and get token
+router.post("/verify-login-otp", async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (email !== process.env.ADMIN_EMAIL) return res.status(400).json({ error: "Invalid credentials" });
+    const { verifyOtp } = require("../services/otpService");
+    const result = verifyOtp(email, otp);
+    if (!result.success) return res.status(400).json({ error: result.message });
     const token = jwt.sign({ role: "superadmin", email }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.json({ token });
+    res.json({ token, otpVerifiedAt: Date.now() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -29,9 +29,10 @@ export default function CreateGymAccount() {
   }, []);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    // Reset OTP if email changes
-    if (e.target.name === "email") {
+    let { name, value } = e.target;
+    if (name === "phone") value = value.replace(/\D/g, "").slice(0, 20);
+    setForm({ ...form, [name]: value });
+    if (name === "email") {
       setOtpSent(false);
       setOtpVerified(false);
       setOtp("");
@@ -39,8 +40,11 @@ export default function CreateGymAccount() {
     }
   };
 
+  const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
   const sendOtp = async () => {
     if (!form.email) { setOtpError("Please enter email first"); return; }
+    if (!isValidEmail(form.email)) { setOtpError("Enter a valid email address"); return; }
     setOtpLoading(true); setOtpError("");
     try {
       await api.post("/otp/send", { email: form.email });
@@ -181,7 +185,12 @@ export default function CreateGymAccount() {
 
                 <div>
                   <label className={lc} style={ls}>Phone</label>
-                  <input name="phone" value={form.phone} onChange={handleChange} placeholder="Phone number" className="input-premium" />
+                  <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Phone number" maxLength={20} className="input-premium" />
+                  {form.phone && form.phone.length > 0 && (
+                    <p className="text-xs mt-1" style={{ color: form.phone.length >= 20 ? "#ff6b6b" : "var(--text-faint)" }}>
+                      {form.phone.length}/20 digits
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={lc} style={ls}>Address</label>
