@@ -4,6 +4,7 @@ import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { v, validate } from "../utils/validators";
+import SEO from "../components/SEO";
 import img6 from "../assets/6.png";
 
 const bullets = [
@@ -207,6 +208,12 @@ export default function Login() {
       className="min-h-screen relative overflow-hidden"
       style={{ background: "var(--bg-base)", fontFamily: "var(--font-body)" }}
     >
+      <SEO
+        title="Log In — Access Your Gym Dashboard"
+        description="Log in to your FlexOps gym management dashboard. Manage members, track attendance, and monitor revenue from one place."
+        canonical="/login"
+        noindex={false}
+      />
       {/* Ambient glows */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#FF5A36]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-[#2DD4C4]/8 rounded-full blur-3xl pointer-events-none" />

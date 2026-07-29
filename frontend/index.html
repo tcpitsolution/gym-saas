@@ -2,13 +2,94 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./src/assets/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Theme & Security -->
     <meta name="theme-color" content="#0E1011" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- Primary SEO (fallback — react-helmet-async overrides per page) -->
+    <title>FlexOps — Gym Management Software for Indian Gyms</title>
+    <meta name="description" content="FlexOps is all-in-one gym management software built for Indian gym owners. Manage members, billing, attendance, and reports from one dashboard. Free to start." />
+    <meta name="robots" content="index,follow" />
+    <meta name="author" content="FlexOps" />
+    <link rel="canonical" href="https://flexops.site/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FlexOps" />
+    <meta property="og:title" content="FlexOps — Gym Management Software for Indian Gyms" />
+    <meta property="og:description" content="All-in-one gym management software. Members, billing, attendance, and reports in one dashboard. Free to start." />
+    <meta property="og:image" content="https://flexops.site/og-image.png" />
+    <meta property="og:url" content="https://flexops.site/" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FlexOps — Gym Management Software" />
+    <meta name="twitter:description" content="All-in-one gym management for Indian gym owners. Free to start." />
+    <meta name="twitter:image" content="https://flexops.site/og-image.png" />
+
+    <!-- Google Search Console Verification (replace with your actual code) -->
+    <meta name="google-site-verification" content="REPLACE_WITH_YOUR_GOOGLE_VERIFICATION_CODE" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/src/assets/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/src/assets/logo.png" />
+
+    <!-- Web Manifest -->
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Fonts: preconnect then load -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    <title>FlexOps — Gym Management Software</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Organization Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "FlexOps",
+      "url": "https://flexops.site",
+      "logo": "https://flexops.site/favicon.svg",
+      "description": "All-in-one gym management software built for Indian gym owners.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Ludhiana",
+        "addressRegion": "Punjab",
+        "addressCountry": "IN"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "soutiontcp@gmail.com",
+        "contactType": "customer support"
+      },
+      "sameAs": []
+    }
+    </script>
+
+    <!-- WebSite Structured Data (enables Sitelinks Search Box) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "FlexOps",
+      "url": "https://flexops.site",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://flexops.site/?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

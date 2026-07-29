@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Block private/app routes from indexing
+Disallow: /dashboard
+Disallow: /members
+Disallow: /members/new
+Disallow: /attendance
+Disallow: /plans
+Disallow: /payments
+Disallow: /trainers
+Disallow: /classes
+Disallow: /settings
+Disallow: /reports
+Disallow: /ask-ai
+Disallow: /admin/
+
+Sitemap: https://flexops.site/sitemap.xml

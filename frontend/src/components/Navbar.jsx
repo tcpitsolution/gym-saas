@@ -40,7 +40,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav aria-label="Main navigation" className="hidden md:flex items-center gap-8">
           {navLinks.map((l) => {
             const active = location.pathname === l.to;
             return (
@@ -84,7 +84,9 @@ export default function Navbar() {
         <button
           className="md:hidden flex flex-col gap-1.5 p-1"
           onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
         >
           {[0, 1, 2].map((i) => (
             <span
@@ -106,9 +108,11 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {menuOpen && (
         <div
+          id="mobile-menu"
           className="md:hidden px-6 pb-5 space-y-3 animate-fade-up"
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
         >
+          <nav aria-label="Mobile navigation">
           {navLinks.map((l) => (
             <Link
               key={l.to}
@@ -123,6 +127,7 @@ export default function Navbar() {
             <Link to="/login" className="btn-outline text-sm" style={{ padding: "0.55rem 1.25rem" }}>Log in</Link>
             <Link to="/signup" className="btn-primary text-sm" style={{ padding: "0.55rem 1.25rem" }}>Get Started</Link>
           </div>
+          </nav>
         </div>
       )}
     </header>

@@ -3,7 +3,7 @@ import Animate from "./Animate";
 
 export default function Footer() {
   return (
-    <footer style={{ background: "#0A0C0D", borderTop: "1px solid rgba(255,255,255,0.06)", fontFamily: "var(--font-body)" }}>
+    <footer aria-label="Site footer" style={{ background: "#0A0C0D", borderTop: "1px solid rgba(255,255,255,0.06)", fontFamily: "var(--font-body)" }}>
       <div className="max-w-6xl mx-auto px-6 py-14 grid md:grid-cols-4 gap-10 text-sm">
         <Animate variant="fadeUp">
           <div>

@@ -2,7 +2,28 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Animate from "../components/Animate";
+import SEO from "../components/SEO";
 import appPreview from "../assets/gym1.png";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "FlexOps",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web, Android, iOS",
+  "description": "All-in-one gym management software for Indian gym owners. Manage members, billing, attendance, and reports.",
+  "url": "https://flexops.site",
+  "offers": [
+    { "@type": "Offer", "name": "Starter", "price": "0", "priceCurrency": "INR" },
+    { "@type": "Offer", "name": "Growth", "price": "999", "priceCurrency": "INR" },
+    { "@type": "Offer", "name": "Pro", "price": "2499", "priceCurrency": "INR" }
+  ],
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "reviewCount": "500"
+  }
+};
 
 const featurePreview = [
   { icon: "👥", title: "Member Management", desc: "Track every member, plan, and renewal in one place." },
@@ -20,6 +41,13 @@ const stats = [
 export default function Home() {
   return (
     <div className="landing-page overflow-x-hidden">
+      <SEO
+        title="Gym Management Software for Indian Gyms"
+        description="FlexOps is all-in-one gym management software built for Indian gym owners. Manage members, billing, attendance, penalties, and reports from one dashboard. Free to start — no setup fee."
+        canonical="/"
+        keywords="gym management software, gym software India, gym billing software, member management, attendance tracking, gym SaaS India"
+        structuredData={structuredData}
+      />
       <Navbar />
 
       {/* ── Hero ── */}

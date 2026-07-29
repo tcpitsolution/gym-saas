@@ -27,6 +27,7 @@ import Trainers from "./pages/Trainers";
 import Classes from "./pages/Classes";
 import Settings from "./pages/Settings";
 import AskAIPage from "./pages/AskAIPage";
+import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ children }) {
   const { token, role } = useAuth();
@@ -209,7 +210,7 @@ function AppRoutes() {
         }
       />
 
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

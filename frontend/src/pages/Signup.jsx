@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../api/axios";
 import { useToast } from "../context/ToastContext";
 import { v, validate } from "../utils/validators";
+import SEO from "../components/SEO";
 
 const benefits = [
   {
@@ -94,6 +95,11 @@ export default function RequestDemo() {
       className="min-h-screen relative overflow-hidden"
       style={{ background: "var(--bg-base)", fontFamily: "var(--font-body)" }}
     >
+      <SEO
+        title="Request a Demo — Get Your Gym Account Set Up"
+        description="Request a free demo of FlexOps gym management software. Fill in your gym details and our team will set up your account within hours. No setup fee."
+        canonical="/signup"
+      />
       <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-[#2DD4C4]/8 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-[#FF5A36]/10 rounded-full blur-3xl pointer-events-none" />
 

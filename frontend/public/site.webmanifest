@@ -1,0 +1,18 @@
+{
+  "name": "FlexOps — Gym Management Software",
+  "short_name": "FlexOps",
+  "description": "All-in-one gym management software for Indian gym owners. Members, billing, attendance, and reports.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E1011",
+  "theme_color": "#0E1011",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/src/assets/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

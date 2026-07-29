@@ -1,6 +1,7 @@
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Animate from "../components/Animate";
+import SEO from "../components/SEO";
 import { Link } from "react-router-dom";
 
 const apps = [
@@ -13,6 +14,12 @@ export default function Apps() {
   return (
     <div className="bg-[#0E1011] text-white overflow-x-hidden" style={{ fontFamily: "var(--font-body)" }}>
       <Navbar />
+      <SEO
+        title="Apps — FlexOps on Web, Android & iOS"
+        description="Access FlexOps gym management on any device. Full-featured web dashboard available now. Android and iOS apps coming soon."
+        canonical="/apps"
+        keywords="gym management app, gym app Android, gym app iOS, FlexOps mobile app"
+      />
 
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-14 text-center relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-64 bg-[#2DD4C4]/6 rounded-full blur-3xl pointer-events-none" />

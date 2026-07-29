@@ -2,7 +2,41 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Animate from "../components/Animate";
+import SEO from "../components/SEO";
 import pricingScreen from "../assets/4th.png";
+
+const faqStructuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://flexops.site/" },
+        { "@type": "ListItem", "position": 2, "name": "Pricing", "item": "https://flexops.site/pricing" }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is there really a free plan?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes, up to 100 members with core features, no card required." }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I switch plans later?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Yes, upgrade or downgrade anytime from your dashboard." }
+        },
+        {
+          "@type": "Question",
+          "name": "Do you charge setup fees?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No setup fees on any plan, ever." }
+        }
+      ]
+    }
+  ]
+};
 
 const plans = [
   {
@@ -37,6 +71,13 @@ const faqs = [
 export default function Pricing() {
   return (
     <div className="landing-page overflow-x-hidden">
+      <SEO
+        title="Pricing — Free, Growth & Pro Plans for Gym Management"
+        description="FlexOps pricing: Free plan for up to 100 members, Growth at ₹999/mo, Pro at ₹2,499/mo. No setup fees. No hidden charges. Start free today."
+        canonical="/pricing"
+        keywords="gym software pricing, gym management free plan, gym SaaS India pricing, FlexOps plans"
+        structuredData={faqStructuredData}
+      />
       <Navbar />
 
       {/* ── Header ── */}

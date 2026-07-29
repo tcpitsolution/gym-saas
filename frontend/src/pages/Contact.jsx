@@ -2,6 +2,7 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Animate from "../components/Animate";
+import SEO from "../components/SEO";
 import contactScreen from "../assets/5th.png";
 
 const info = [
@@ -21,6 +22,12 @@ export default function Contact() {
 
   return (
     <div className="landing-page overflow-x-hidden">
+      <SEO
+        title="Contact Us — Get in Touch with FlexOps"
+        description="Have questions about FlexOps gym management software? Contact our team in Ludhiana, Punjab. We reply within a few hours on weekdays."
+        canonical="/contact"
+        keywords="contact FlexOps, gym software support, FlexOps help, gym management contact India"
+      />
       <Navbar />
 
       {/* ── Header ── */}

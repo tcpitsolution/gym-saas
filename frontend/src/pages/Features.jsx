@@ -2,8 +2,18 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Animate from "../components/Animate";
+import SEO from "../components/SEO";
 import screen2 from "../assets/gym2.png";
 import screen3 from "../assets/3.png";
+
+const breadcrumb = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://flexops.site/" },
+    { "@type": "ListItem", "position": 2, "name": "Features", "item": "https://flexops.site/features" }
+  ]
+};
 
 const features = [
   { icon: "👥", title: "Member Management", desc: "Add, search, and track every member — plans, renewals, expiry dates, all in one place." },
@@ -23,6 +33,13 @@ const steps = [
 export default function Features() {
   return (
     <div className="landing-page overflow-x-hidden">
+      <SEO
+        title="Features — Member Management, Billing, Attendance & AI Tools"
+        description="Explore FlexOps features: member management, automated billing, attendance tracking, smart reminders, AI churn prediction, revenue reports, and more. Built for Indian gyms."
+        canonical="/features"
+        keywords="gym member management, gym billing software, attendance tracking, gym reminders, AI gym software, gym reports India"
+        structuredData={breadcrumb}
+      />
       <Navbar />
 
       {/* ── Header ── */}
