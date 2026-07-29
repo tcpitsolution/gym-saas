@@ -55,12 +55,17 @@ router.post("/login", async (req, res) => {
 
     if (email.toLowerCase().trim() === adminEmail) {
       if (password.trim() !== adminPassword) return res.status(400).json({ error: "Invalid credentials" });
-      const token = jwt.sign(
-        { role: "superadmin", email: adminEmail },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
-      );
-      return res.json({ token });
+
+      const otpVerifiedAt = req.headers["x-admin-otp-verified"];
+      const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+      if (otpVerifiedAt && Number(otpVerifiedAt) > twentyFourHoursAgo) {
+        const token = jwt.sign({ role: "superadmin", email: adminEmail }, process.env.JWT_SECRET, { expiresIn: "7d" });
+        return res.json({ token });
+      }
+
+      const { sendOtp } = require("../services/otpService");
+      await sendOtp(adminEmail);
+      return res.json({ otpRequired: true, email: adminEmail });
     }
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
@@ -98,6 +103,12 @@ router.post("/verify-login-otp", async (req, res) => {
     const { verifyOtp } = require("../services/otpService");
     const result = verifyOtp(email, otp);
     if (!result.success) return res.status(400).json({ error: result.message });
+
+    const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
+    if (email.toLowerCase().trim() === adminEmail) {
+      const token = jwt.sign({ role: "superadmin", email: adminEmail }, process.env.JWT_SECRET, { expiresIn: "7d" });
+      return res.json({ token, otpVerifiedAt: Date.now() });
+    }
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) return res.status(400).json({ error: "User not found" });
@@ -161,8 +172,7 @@ router.post("/reset-password", async (req, res) => {
         <h2>Password Reset Successful</h2>
         <p>Hi <strong>${user.name}</strong>,</p>
         <p>Your FlexOps account password has been successfully reset.</p>
-        <p>Your new password: <strong style="font-size:1.1rem;letter-spacing:2px;">${newPassword}</strong></p>
-        <p>You can now log in at <a href="https://flexops.in/login">flexops.in/login</a> with your new password.</p>
+        <p>You can now log in at <a href="https://flexops.in/login">flexops.in/login</a>.</p>
         <p style="color:#888;font-size:12px;">If you did not request this, contact admin immediately.</p>
       </div>`
     );
