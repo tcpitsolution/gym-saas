@@ -4,7 +4,10 @@ const Member = require("../models/Member");
 const MembershipPlan = require("../models/MembershipPlan");
 const Payment = require("../models/Payment");
 const Gym = require("../models/Gym");
-const { sendEmail, newMemberWelcomeEmail } = require("../services/emailService");
+const {
+  sendEmail,
+  newMemberWelcomeEmail,
+} = require("../services/emailService");
 const { sendOtp } = require("../services/otpService");
 
 const router = express.Router();
@@ -12,7 +15,22 @@ const router = express.Router();
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const { gymId } = req.user;
-    const { name, phone, email, planId, startDate, amount, mode, goal, emergencyContact, trainerId, joinSource, notes, agreeTerms } = req.body;
+    const {
+      name,
+      phone,
+      email,
+      planId,
+      startDate,
+      amount,
+      mode,
+      goal,
+      emergencyContact,
+      trainerId,
+      joinSource,
+      notes,
+      agreeTerms,
+      photo,
+    } = req.body;
 
     const plan = await MembershipPlan.findOne({ _id: planId, gymId });
     if (!plan) return res.status(400).json({ error: "Plan not found" });
@@ -27,6 +45,7 @@ router.post("/", authMiddleware, async (req, res) => {
       name,
       phone,
       email,
+      photo,
       currentPlan: plan._id,
       membershipStart: start,
       membershipEnd: end,
@@ -51,7 +70,14 @@ router.post("/", authMiddleware, async (req, res) => {
     // Send welcome email + OTP to member if email exists
     if (member.email) {
       const gym = await Gym.findById(gymId);
-      const { subject, html } = newMemberWelcomeEmail(member, gym?.name || "Your Gym", plan.name, end, amount, mode);
+      const { subject, html } = newMemberWelcomeEmail(
+        member,
+        gym?.name || "Your Gym",
+        plan.name,
+        end,
+        amount,
+        mode,
+      );
       sendEmail(member.email, subject, html);
     }
 
@@ -95,10 +121,46 @@ router.get("/:id", authMiddleware, async (req, res) => {
   }
 });
 
+router.patch("/:id", authMiddleware, async (req, res) => {
+  try {
+    const { gymId } = req.user;
+    const allowedFields = [
+      "name",
+      "phone",
+      "email",
+      "photo",
+      "goal",
+      "emergencyContact",
+      "trainerId",
+      "joinSource",
+      "notes",
+      "gender",
+      "dob",
+      "address",
+    ];
+    const updates = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    }
+
+    const member = await Member.findOneAndUpdate(
+      { _id: req.params.id, gymId },
+      { $set: updates },
+      { new: true },
+    );
+    if (!member) return res.status(404).json({ error: "Member not found" });
+
+    res.json(member);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { gymId, role } = req.user;
-    if (role !== "owner" && role !== "manager") return res.status(403).json({ error: "Not allowed" });
+    if (role !== "owner" && role !== "manager")
+      return res.status(403).json({ error: "Not allowed" });
 
     const member = await Member.findOneAndDelete({ _id: req.params.id, gymId });
     if (!member) return res.status(404).json({ error: "Member not found" });

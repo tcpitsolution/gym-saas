@@ -140,7 +140,10 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const otpVerifiedAt = localStorage.getItem("adminOtpVerifiedAt");
+      const res = await api.post("/auth/login", { email, password }, {
+        headers: otpVerifiedAt ? { "x-admin-otp-verified": otpVerifiedAt } : {},
+      });
       if (res.data.otpRequired) {
         setOtpEmail(res.data.email);
         setOtpStep(true);
@@ -176,6 +179,9 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await api.post("/auth/verify-login-otp", { email: otpEmail, otp });
+      if (res.data.otpVerifiedAt) {
+        localStorage.setItem("adminOtpVerifiedAt", String(res.data.otpVerifiedAt));
+      }
       login(res.data.token);
       toast.success("Welcome back! 💪");
       navigate("/dashboard");

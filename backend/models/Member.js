@@ -9,10 +9,14 @@ const memberSchema = new mongoose.Schema(
     gender: String,
     dob: Date,
     address: String,
+
+    photo: { type: String, default: null }, // base64 dataURL of member's photo
+
     currentPlan: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "MembershipPlan",
     },
+
     membershipStart: Date,
     membershipEnd: Date,
     status: {
