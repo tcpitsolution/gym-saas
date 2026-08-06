@@ -129,7 +129,6 @@ router.post("/verify-login-otp", async (req, res) => {
   }
 });
 
-// Forgot password — check email in DB, send OTP
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
@@ -150,7 +149,99 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
-// Reset password — OTP already verified on frontend, just update password
+// Get full profile (user + gym details)
+router.get("/me", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.userId).select("-password -otpVerifiedAt");
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const gym = await Gym.findById(user.gymId);
+
+    res.json({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      alternatePhone: user.alternatePhone,
+      address: user.address,
+      aadharNumber: user.aadharNumber,
+      panNumber: user.panNumber,
+      joiningDate: user.joiningDate,
+      role: user.role,
+      gymName: gym?.name,
+      gymAddress: gym?.address,
+      gymPhone: gym?.phone,
+      gymEmail: gym?.email,
+      features: gym?.features || {},
+      subscriptionStatus: gym?.subscription?.status || "pending",
+      subscriptionEnd: gym?.subscription?.endDate || null,
+    });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError") return res.status(401).json({ error: "Invalid token" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update profile
+router.patch("/update-profile", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const allowed = ["phone", "alternatePhone", "address", "aadharNumber", "panNumber"];
+    const updates = {};
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    }
+    if (req.body.ownerName !== undefined) updates.name = req.body.ownerName;
+    if (req.body.name !== undefined) updates.name = req.body.name;
+
+    await User.findByIdAndUpdate(decoded.userId, { $set: updates });
+    res.json({ success: true });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError") return res.status(401).json({ error: "Invalid token" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Change password
+router.post("/change-password", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: "All fields required" });
+    if (newPassword.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
+    if (!/[A-Z]/.test(newPassword)) return res.status(400).json({ error: "Password must contain an uppercase letter" });
+    if (!/[0-9]/.test(newPassword)) return res.status(400).json({ error: "Password must contain a number" });
+    if (!/[!@#$%^&*]/.test(newPassword)) return res.status(400).json({ error: "Password must contain a special character" });
+
+    const user = await User.findById(decoded.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) return res.status(400).json({ error: "Current password is incorrect" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError") return res.status(401).json({ error: "Invalid token" });
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reset password
 router.post("/reset-password", async (req, res) => {
   try {
     const { email, newPassword } = req.body;

@@ -13,6 +13,14 @@ const gymSchema = new mongoose.Schema(
       endDate: { type: Date },
       amount: { type: Number, default: 0 },
     },
+    features: {
+      members:   { type: Boolean, default: true },
+      payments:  { type: Boolean, default: true },
+      trainers:  { type: Boolean, default: true },
+      exercises: { type: Boolean, default: true },
+      askai:     { type: Boolean, default: true },
+      reports:   { type: Boolean, default: true },
+    },
   },
   { timestamps: true },
 );

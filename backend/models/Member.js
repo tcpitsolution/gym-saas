@@ -10,7 +10,8 @@ const memberSchema = new mongoose.Schema(
     dob: Date,
     address: String,
 
-    photo: { type: String, default: null }, // base64 dataURL of member's photo
+    photo: { type: String, default: null },
+    faceEmbedding: { type: [Number], default: null }, // face recognition fingerprint
 
     currentPlan: {
       type: mongoose.Schema.Types.ObjectId,
@@ -31,7 +32,6 @@ const memberSchema = new mongoose.Schema(
     notes: { type: String },
     agreeTerms: { type: Boolean, default: false },
 
-    // NEW: tracking fields so we never send the same notification twice
     renewalReminderSentAt: { type: Date, default: null },
     expiryNotifiedAt: { type: Date, default: null },
   },

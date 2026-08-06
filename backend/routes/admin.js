@@ -215,6 +215,22 @@ router.patch("/gyms/:gymId/subscription", authMiddleware, adminOnly, async (req,
   }
 });
 
+// Update gym features (lock/unlock)
+router.patch("/gyms/:gymId/features", authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { features } = req.body; // { members: true, askai: false, ... }
+    const gym = await Gym.findByIdAndUpdate(
+      req.params.gymId,
+      { $set: { features } },
+      { new: true }
+    );
+    if (!gym) return res.status(404).json({ error: "Gym not found" });
+    res.json(gym);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Admin Plans CRUD ──────────────────────────────────────
 
 // Get all admin plans

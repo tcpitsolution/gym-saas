@@ -30,6 +30,7 @@ router.post("/", authMiddleware, async (req, res) => {
       notes,
       agreeTerms,
       photo,
+      faceEmbedding,
     } = req.body;
 
     const plan = await MembershipPlan.findOne({ _id: planId, gymId });
@@ -46,6 +47,7 @@ router.post("/", authMiddleware, async (req, res) => {
       phone,
       email,
       photo,
+      faceEmbedding,
       currentPlan: plan._id,
       membershipStart: start,
       membershipEnd: end,
@@ -62,12 +64,11 @@ router.post("/", authMiddleware, async (req, res) => {
       gymId,
       memberId: member._id,
       planId: plan._id,
-      amount,
+      amount: Number(amount) || 0,
       mode,
       status: "paid",
     });
 
-    // Send welcome email + OTP to member if email exists
     if (member.email) {
       const gym = await Gym.findById(gymId);
       const { subject, html } = newMemberWelcomeEmail(
@@ -129,6 +130,7 @@ router.patch("/:id", authMiddleware, async (req, res) => {
       "phone",
       "email",
       "photo",
+      "faceEmbedding",
       "goal",
       "emergencyContact",
       "trainerId",
@@ -153,6 +155,27 @@ router.patch("/:id", authMiddleware, async (req, res) => {
     res.json(member);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/:id/enroll-face", authMiddleware, async (req, res) => {
+  try {
+    const { gymId } = req.user;
+    const { image } = req.body;
+
+    if (!image) return res.status(400).json({ error: "Image required" });
+
+    // Save the photo — face-scan uses it directly for Gemini vision comparison
+    const member = await Member.findOneAndUpdate(
+      { _id: req.params.id, gymId },
+      { $set: { photo: image } },
+      { new: true },
+    );
+    if (!member) return res.status(404).json({ error: "Member not found" });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

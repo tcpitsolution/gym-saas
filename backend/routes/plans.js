@@ -37,4 +37,18 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+router.delete("/:id", authMiddleware, async (req, res) => {
+  try {
+    const { gymId, role } = req.user;
+    if (role !== "owner" && role !== "manager") {
+      return res.status(403).json({ error: "Not allowed" });
+    }
+    const plan = await MembershipPlan.findOneAndDelete({ _id: req.params.id, gymId });
+    if (!plan) return res.status(404).json({ error: "Plan not found" });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
