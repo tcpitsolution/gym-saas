@@ -14,18 +14,22 @@ import { spacing, radius, typography } from "../theme/colors";
 import { ListItem, Badge } from "../components";
 import { membersApi } from "../api";
 import { useTheme } from "../store/themeStore";
+import { useNavigationStore } from "../store/navigationStore";
+import MemberDetailModal from "../components/MemberDetailModal";
 
-const tabs = ["All", "Active", "Inactive"];
+const tabs = ["All", "Active", "Expired", "Paused"];
 
 export default function MembersScreen() {
   const colors = useTheme();
-  const styles = getStyles(colors); // 👈 styles ab colors ke saath dynamically banti hain
+  const styles = getStyles(colors);
+  const { setScreen } = useNavigationStore();
 
   const [tab, setTab] = useState("All");
   const [search, setSearch] = useState("");
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
 
   const load = useCallback(async () => {
     try {
@@ -54,7 +58,7 @@ export default function MembersScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Members</Text>
-        <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.addBtn} activeOpacity={0.8} onPress={() => setScreen("addMember")}>
           <UserPlus size={18} color={colors.textPrimary} />
           <Text style={styles.addBtnText}>Add</Text>
         </TouchableOpacity>
@@ -107,16 +111,18 @@ export default function MembersScreen() {
             ) : (
               members.map((m, i) => (
                 <View key={m._id}>
-                  <ListItem
-                    name={m.name}
-                    sub={`${m.phone || m.email || ""} · ${m.currentPlan?.name || "No Plan"}`}
-                    right={
-                      <Badge
-                        label={m.status === "active" ? "Active" : "Inactive"}
-                        type={m.status === "active" ? "active" : "inactive"}
-                      />
-                    }
-                  />
+                  <TouchableOpacity onPress={() => setSelectedMember(m)} activeOpacity={0.7}>
+                    <ListItem
+                      name={m.name}
+                      sub={`${m.phone || m.email || ""} · ${m.currentPlan?.name || "No Plan"}`}
+                      right={
+                        <Badge
+                          label={m.status === "active" ? "Active" : m.status === "expired" ? "Expired" : "Paused"}
+                          type={m.status === "active" ? "active" : "inactive"}
+                        />
+                      }
+                    />
+                  </TouchableOpacity>
                   {i < members.length - 1 && <View style={styles.divider} />}
                 </View>
               ))
@@ -124,11 +130,18 @@ export default function MembersScreen() {
           </View>
         </ScrollView>
       )}
+
+      <MemberDetailModal
+        member={selectedMember}
+        visible={!!selectedMember}
+        onClose={() => setSelectedMember(null)}
+        onRefresh={load}
+      />
     </View>
   );
 }
 
-// 👇 Ab ye ek FUNCTION hai jo colors leta hai aur styles return karta hai
+// Styles function — receives colors and returns StyleSheet
 function getStyles(colors: any) {
   return StyleSheet.create({
     container: {

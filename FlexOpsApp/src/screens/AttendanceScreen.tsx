@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -8,17 +8,24 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Alert,
+  Modal,
 } from "react-native";
-import { QrCode, Search, UserCheck } from "lucide-react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { Search, UserCheck, ScanFace, X, RefreshCw } from "lucide-react-native";
 import { spacing, radius, typography } from "../theme/colors";
 import { ListItem, SectionHeader } from "../components";
 import { attendanceApi, membersApi } from "../api";
 import { useTheme } from "../store/themeStore";
+import { useNavigationStore } from "../store/navigationStore";
+import AppAlert from "../components/AppAlert";
+
+const SCAN_INTERVAL_MS = 4000;
+const MAX_NO_MATCH_RETRIES = 4;
 
 export default function AttendanceScreen() {
   const colors = useTheme();
-  const styles = getStyles(colors); // 👈 styles ab colors ke saath dynamically banti hain
+  const styles = getStyles(colors);
+  const { setScreen, params, clearParams } = useNavigationStore();
 
   const [search, setSearch] = useState("");
   const [checkIns, setCheckIns] = useState<any[]>([]);
@@ -26,19 +33,51 @@ export default function AttendanceScreen() {
   const [totalMembers, setTotalMembers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [manualId, setManualId] = useState("");
+  const [manualSearch, setManualSearch] = useState("");
+  const [allMembers, setAllMembers] = useState<any[]>([]);
   const [checkinLoading, setCheckinLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Camera
+  const [scanVisible, setScanVisible] = useState(false);
+  const [facing, setFacing] = useState<"front" | "back">("front");
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<any>(null);
+  const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isBusyRef = useRef(false);
+  const noMatchCountRef = useRef(0);
+
+  type ScanStatus = "scanning" | "success" | "already" | "unknown";
+  const [scanStatus, setScanStatus] = useState<ScanStatus>("scanning");
+  const [matchedMember, setMatchedMember] = useState<any>(null);
+  // true when a face is detected in the current frame (turns oval green)
+  const [faceDetected, setFaceDetected] = useState(false);
+
+  // AppAlert
+  const [alert, setAlert] = useState<{
+    visible: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message?: string;
+  }>({ visible: false, type: "info", title: "" });
+
+  const showAlert = (
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message?: string,
+  ) => setAlert({ visible: true, type, title, message });
 
   const load = useCallback(async () => {
     try {
-      const [logs, attStats, allMembers] = await Promise.all([
+      const [logs, attStats, members] = await Promise.all([
         attendanceApi.today(),
         attendanceApi.stats(),
         membersApi.getAll(),
       ]);
       setCheckIns(logs);
       setStats(attStats);
-      setTotalMembers(allMembers.length);
+      setAllMembers(members);
+      setTotalMembers(members.length);
     } catch {}
     setLoading(false);
     setRefreshing(false);
@@ -48,24 +87,140 @@ export default function AttendanceScreen() {
     load();
   }, [load]);
 
+  // Auto-open camera when navigated here with autoScan param
+  useEffect(() => {
+    if (params?.autoScan) {
+      openFaceScan();
+      clearParams();
+    }
+  }, [params?.autoScan]);
+
   const onRefresh = () => {
     setRefreshing(true);
     load();
   };
 
-  const handleManualCheckin = async () => {
-    if (!manualId.trim()) return;
+  const handleManualCheckin = async (memberId: string, memberName: string) => {
     setCheckinLoading(true);
+    setShowSuggestions(false);
+    setManualSearch(memberName);
     try {
-      await attendanceApi.checkin(manualId.trim(), "Manual");
-      Alert.alert("Success", "Member checked in!");
-      setManualId("");
+      await attendanceApi.checkin(memberId, "Manual");
+      showAlert("success", "Checked In!", `${memberName} checked in successfully.`);
+      setManualSearch("");
       load();
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      showAlert("error", "Check-in Failed", err.message);
     } finally {
       setCheckinLoading(false);
     }
+  };
+
+  const suggestions = manualSearch.trim().length > 0
+    ? allMembers.filter(m => m.name.toLowerCase().includes(manualSearch.toLowerCase())).slice(0, 5)
+    : [];
+
+  const openFaceScan = async () => {
+    if (!permission?.granted) {
+      const res = await requestPermission();
+      if (!res.granted) {
+        showAlert(
+          "warning",
+          "Camera Permission Required",
+          "Please allow camera access to use face attendance.",
+        );
+        return;
+      }
+    }
+    setMatchedMember(null);
+    setScanStatus("scanning");
+    setFaceDetected(false);
+    noMatchCountRef.current = 0;
+    setScanVisible(true);
+  };
+
+  const stopScanning = () => {
+    if (scanTimerRef.current) {
+      clearInterval(scanTimerRef.current);
+      scanTimerRef.current = null;
+    }
+  };
+
+  const closeFaceScan = () => {
+    stopScanning();
+    setScanVisible(false);
+    setFaceDetected(false);
+  };
+
+  const scanOnce = useCallback(async () => {
+    if (isBusyRef.current || !cameraRef.current) return;
+    isBusyRef.current = true;
+    try {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.5,
+        base64: true,
+        skipProcessing: true,
+      });
+      const dataUrl = `data:image/jpeg;base64,${photo.base64}`;
+
+      setFaceDetected(true);
+
+      const data = await attendanceApi.faceScan(dataUrl);
+
+      if (!data.matched) {
+        setFaceDetected(false);
+        noMatchCountRef.current += 1;
+        if (noMatchCountRef.current >= MAX_NO_MATCH_RETRIES) {
+          setScanStatus("unknown");
+          stopScanning();
+        }
+        // else keep retrying silently
+        return;
+      }
+
+      setMatchedMember(data.member);
+      setScanStatus(data.alreadyCheckedIn ? "already" : "success");
+      stopScanning();
+      load();
+    } catch (err: any) {
+      setFaceDetected(false);
+      // Only stop and show unknown on a definitive "not found" response
+      if (err?.message?.toLowerCase().includes("not found") ||
+          err?.message?.toLowerCase().includes("404")) {
+        setScanStatus("unknown");
+        stopScanning();
+      }
+      // Otherwise (network hiccup etc.) keep retrying silently
+    } finally {
+      isBusyRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (scanVisible && scanStatus === "scanning") {
+      scanTimerRef.current = setInterval(scanOnce, SCAN_INTERVAL_MS);
+    }
+    return stopScanning;
+  }, [scanVisible, scanStatus, scanOnce]);
+
+  // Auto-close after success/already
+  useEffect(() => {
+    if (scanStatus === "success" || scanStatus === "already") {
+      const t = setTimeout(() => setScanVisible(false), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [scanStatus]);
+
+  const retryScan = () => {
+    setMatchedMember(null);
+    setFaceDetected(false);
+    noMatchCountRef.current = 0;
+    setScanStatus("scanning");
+  };
+
+  const goAddMember = () => {
+    setScanVisible(false);
+    setScreen("addMember");
   };
 
   const pct =
@@ -86,106 +241,246 @@ export default function AttendanceScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    >
-      <Text style={styles.title}>Attendance</Text>
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        <Text style={styles.title}>Attendance</Text>
 
-      {/* Ring Card */}
-      <View style={styles.ringCard}>
-        <View style={styles.ringOuter}>
-          <View style={styles.ringInner}>
-            <Text style={styles.ringBig}>{pct}%</Text>
-            <Text style={styles.ringSmall}>Today</Text>
+        {/* Face Scan Card */}
+        <TouchableOpacity
+          style={styles.scanCard}
+          activeOpacity={0.85}
+          onPress={openFaceScan}
+        >
+          <View style={styles.scanIconWrap}>
+            <ScanFace size={26} color={colors.primary} />
           </View>
-        </View>
-        <View style={styles.ringMeta}>
-          <View style={styles.metaRow}>
-            <View style={[styles.dot, { backgroundColor: colors.primary }]} />
-            <Text style={styles.metaText}>
-              {stats.todayCheckIns} Checked In
+          <View style={{ flex: 1 }}>
+            <Text style={styles.scanTitle}>Scan Attendance</Text>
+            <Text style={styles.scanSub}>
+              Auto check-in via face recognition
             </Text>
           </View>
-          <View style={styles.metaRow}>
-            <View style={[styles.dot, { backgroundColor: colors.success }]} />
-            <Text style={styles.metaText}>{stats.activeNow} Inside Now</Text>
+        </TouchableOpacity>
+
+        {/* Stats Ring */}
+        <View style={styles.ringCard}>
+          <View style={styles.ringOuter}>
+            <View style={styles.ringInner}>
+              <Text style={styles.ringBig}>{pct}%</Text>
+              <Text style={styles.ringSmall}>Today</Text>
+            </View>
           </View>
-          <View style={styles.metaRow}>
-            <View style={[styles.dot, { backgroundColor: colors.border }]} />
-            <Text style={styles.metaText}>{totalMembers} Total Members</Text>
+          <View style={styles.ringMeta}>
+            <View style={styles.metaRow}>
+              <View style={[styles.dot, { backgroundColor: colors.primary }]} />
+              <Text style={styles.metaText}>
+                {stats.todayCheckIns} Checked In
+              </Text>
+            </View>
+            <View style={styles.metaRow}>
+              <View style={[styles.dot, { backgroundColor: colors.success }]} />
+              <Text style={styles.metaText}>{stats.activeNow} Inside Now</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <View style={[styles.dot, { backgroundColor: colors.border }]} />
+              <Text style={styles.metaText}>{totalMembers} Total Members</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Manual Check-in */}
-      <View style={styles.manualCard}>
-        <Text style={styles.cardTitle}>Manual Check-in</Text>
-        <View style={styles.manualRow}>
+        {/* Manual Check-in */}
+        <View style={styles.manualCard}>
+          <Text style={styles.cardTitle}>Manual Check-in</Text>
+          <View style={styles.manualRow}>
+            <TextInput
+              style={styles.manualInput}
+              placeholder="Search member by name..."
+              placeholderTextColor={colors.textMuted}
+              value={manualSearch}
+              onChangeText={(t) => { setManualSearch(t); setShowSuggestions(true); }}
+              onFocus={() => setShowSuggestions(true)}
+            />
+            {checkinLoading && <ActivityIndicator color={colors.primary} size="small" style={{ marginLeft: 8 }} />}
+          </View>
+          {showSuggestions && suggestions.length > 0 && (
+            <View style={[styles.suggestionBox, { borderColor: colors.border, backgroundColor: colors.surfaceElevated }]}>
+              {suggestions.map((m) => (
+                <TouchableOpacity
+                  key={m._id}
+                  style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
+                  onPress={() => handleManualCheckin(m._id, m.name)}
+                  activeOpacity={0.7}
+                >
+                  <UserCheck size={14} color={colors.primary} />
+                  <Text style={[styles.suggestionText, { color: colors.textPrimary }]}>{m.name}</Text>
+                  <Text style={[styles.suggestionSub, { color: colors.textMuted }]}>{m.phone}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Search */}
+        <View style={styles.searchBox}>
+          <Search size={16} color={colors.textMuted} />
           <TextInput
-            style={styles.manualInput}
-            placeholder="Enter Member ID..."
+            style={styles.searchInput}
+            placeholder="Search check-ins..."
             placeholderTextColor={colors.textMuted}
-            value={manualId}
-            onChangeText={setManualId}
+            value={search}
+            onChangeText={setSearch}
           />
-          <TouchableOpacity
-            style={styles.checkinBtn}
-            onPress={handleManualCheckin}
-            disabled={checkinLoading}
-            activeOpacity={0.8}
-          >
-            {checkinLoading ? (
-              <ActivityIndicator color={colors.textPrimary} size="small" />
-            ) : (
-              <UserCheck size={20} color={colors.textPrimary} />
-            )}
+        </View>
+
+        <SectionHeader title={`Today's Check-ins (${checkIns.length})`} />
+        <View style={styles.card}>
+          {filtered.length === 0 ? (
+            <Text style={styles.empty}>No check-ins yet today</Text>
+          ) : (
+            filtered.map((c, i) => (
+              <View key={c._id}>
+                <ListItem
+                  name={c.memberId?.name || "Unknown"}
+                  sub={`${c.method} · ${new Date(c.checkInAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`}
+                />
+                {i < filtered.length - 1 && <View style={styles.divider} />}
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+
+      {/* ── Face Scan Modal ── */}
+      <Modal
+        visible={scanVisible}
+        animationType="slide"
+        onRequestClose={closeFaceScan}
+      >
+        <View style={styles.modalContainer}>
+
+          {/* Camera view with oval overlay */}
+          {scanStatus === "scanning" && (
+            <>
+              <CameraView
+                ref={cameraRef}
+                style={StyleSheet.absoluteFill}
+                facing={facing}
+              />
+
+              {/* Dimmed overlay with oval cutout effect */}
+              <View style={styles.overlay}>
+                {/* Camera flip button */}
+                <TouchableOpacity
+                  style={styles.flipBtn}
+                  onPress={() => setFacing(f => f === "front" ? "back" : "front")}
+                  activeOpacity={0.8}
+                >
+                  <RefreshCw size={20} color="#fff" />
+                  <Text style={styles.flipBtnText}>
+                    {facing === "front" ? "Back" : "Front"}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Face oval — green when face detected, orange otherwise */}
+                <View
+                  style={[
+                    styles.faceFrame,
+                    {
+                      borderColor: faceDetected ? "#22c55e" : colors.primary,
+                      shadowColor: faceDetected ? "#22c55e" : colors.primary,
+                    },
+                  ]}
+                />
+
+                {/* Status hint */}
+                <View style={styles.hintBox}>
+                  {faceDetected ? (
+                    <Text style={[styles.hintText, { color: "#22c55e" }]}>
+                      ● Processing... please wait
+                    </Text>
+                  ) : (
+                    <Text style={styles.hintText}>
+                      Position your face inside the oval
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* Success */}
+          {scanStatus === "success" && matchedMember && (
+            <View style={styles.resultCenter}>
+              <View style={[styles.resultCircle, { backgroundColor: "rgba(34,197,94,0.15)", borderColor: "#22c55e" }]}>
+                <Text style={[styles.resultIcon, { color: "#22c55e" }]}>✓</Text>
+              </View>
+              <Text style={styles.resultTitle}>Checked In!</Text>
+              <Text style={styles.resultName}>{matchedMember.name}</Text>
+              <Text style={styles.resultSub}>Attendance marked for today</Text>
+            </View>
+          )}
+
+          {/* Already checked in */}
+          {scanStatus === "already" && matchedMember && (
+            <View style={styles.resultCenter}>
+              <View style={[styles.resultCircle, { backgroundColor: "rgba(245,166,35,0.15)", borderColor: "#F5A623" }]}>
+                <Text style={[styles.resultIcon, { color: "#F5A623" }]}>!</Text>
+              </View>
+              <Text style={styles.resultTitle}>Already Checked In</Text>
+              <Text style={styles.resultName}>{matchedMember.name}</Text>
+              <Text style={styles.resultSub}>Attendance was already marked today</Text>
+            </View>
+          )}
+
+          {/* Unknown face */}
+          {scanStatus === "unknown" && (
+            <View style={styles.resultCenter}>
+              <View style={[styles.resultCircle, { backgroundColor: "rgba(229,57,53,0.15)", borderColor: colors.error }]}>
+                <Text style={[styles.resultIcon, { color: colors.error }]}>?</Text>
+              </View>
+              <Text style={styles.resultTitle}>Face Not Recognized</Text>
+              <Text style={styles.resultSub}>
+                This person is not registered as a member.
+              </Text>
+              <TouchableOpacity style={styles.addBtn} onPress={goAddMember} activeOpacity={0.85}>
+                <Text style={styles.addBtnText}>+ Add as New Member</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.retryBtn} onPress={retryScan} activeOpacity={0.8}>
+                <Text style={styles.retryBtnText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Close button */}
+          <TouchableOpacity style={styles.closeBtn} onPress={closeFaceScan}>
+            <X size={18} color="#fff" />
           </TouchableOpacity>
         </View>
-      </View>
+      </Modal>
 
-      {/* Search */}
-      <View style={styles.searchBox}>
-        <Search size={16} color={colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search check-ins..."
-          placeholderTextColor={colors.textMuted}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
-
-      {/* Check-in List */}
-      <SectionHeader title={`Today's Check-ins (${checkIns.length})`} />
-      <View style={styles.card}>
-        {filtered.length === 0 ? (
-          <Text style={styles.empty}>No check-ins yet today</Text>
-        ) : (
-          filtered.map((c, i) => (
-            <View key={c._id}>
-              <ListItem
-                name={c.memberId?.name || "Unknown"}
-                sub={`${c.method} · ${new Date(c.checkInAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`}
-              />
-              {i < filtered.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))
-        )}
-      </View>
-    </ScrollView>
+      <AppAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        confirmLabel="OK"
+        onConfirm={() => setAlert(a => ({ ...a, visible: false }))}
+      />
+    </>
   );
 }
 
-// 👇 Ab ye ek FUNCTION hai jo colors leta hai aur styles return karta hai
 function getStyles(colors: any) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -201,6 +496,27 @@ function getStyles(colors: any) {
       color: colors.textPrimary,
       marginBottom: spacing.lg,
     },
+    scanCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.md,
+      backgroundColor: colors.surface,
+      borderRadius: radius.card,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      marginBottom: spacing.md,
+    },
+    scanIconWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colors.primaryDark,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    scanTitle: { ...typography.h3, color: colors.textPrimary },
+    scanSub: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
     ringCard: {
       backgroundColor: colors.surface,
       borderRadius: radius.card,
@@ -243,7 +559,7 @@ function getStyles(colors: any) {
       color: colors.textPrimary,
       marginBottom: spacing.sm,
     },
-    manualRow: { flexDirection: "row", gap: spacing.sm },
+    manualRow: { flexDirection: "row", gap: spacing.sm, alignItems: "center" },
     manualInput: {
       flex: 1,
       ...typography.body,
@@ -255,6 +571,22 @@ function getStyles(colors: any) {
       paddingHorizontal: spacing.md,
       height: 44,
     },
+    suggestionBox: {
+      borderWidth: 1,
+      borderRadius: radius.card,
+      marginTop: spacing.xs,
+      overflow: "hidden",
+    },
+    suggestionItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+    },
+    suggestionText: { ...typography.body, flex: 1 },
+    suggestionSub: { ...typography.caption },
     checkinBtn: {
       width: 44,
       height: 44,
@@ -290,5 +622,115 @@ function getStyles(colors: any) {
       textAlign: "center",
       paddingVertical: spacing.md,
     },
+
+    // ── Modal ──
+    modalContainer: { flex: 1, backgroundColor: "#000" },
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    flipBtn: {
+      position: "absolute",
+      top: 56,
+      right: 20,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: "rgba(255,255,255,0.2)",
+    },
+    flipBtnText: {
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: "600",
+    },
+    faceFrame: {
+      width: 240,
+      height: 300,
+      borderRadius: 140,
+      borderWidth: 3,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.8,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    hintBox: {
+      marginTop: 24,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+    },
+    hintText: {
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    closeBtn: {
+      position: "absolute",
+      top: 50,
+      left: 20,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    // ── Result screens ──
+    resultCenter: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#0d0d0d",
+      padding: 24,
+    },
+    resultCircle: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      borderWidth: 2,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 20,
+    },
+    resultIcon: { fontSize: 44, fontWeight: "700" },
+    resultTitle: {
+      color: "#fff",
+      fontSize: 22,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    resultName: {
+      color: colors.primary,
+      fontSize: 17,
+      fontWeight: "600",
+      marginTop: 8,
+      textAlign: "center",
+    },
+    resultSub: {
+      color: "#999",
+      fontSize: 13,
+      marginTop: 8,
+      textAlign: "center",
+      lineHeight: 20,
+    },
+    addBtn: {
+      marginTop: 28,
+      backgroundColor: colors.primary,
+      paddingVertical: 13,
+      paddingHorizontal: 32,
+      borderRadius: 12,
+    },
+    addBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+    retryBtn: { marginTop: 12, paddingVertical: 10, paddingHorizontal: 20 },
+    retryBtnText: { color: "#999", fontSize: 14, fontWeight: "600" },
   });
 }

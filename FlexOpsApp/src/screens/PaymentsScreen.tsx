@@ -7,19 +7,21 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from "react-native";
 import { TrendingUp, TrendingDown, CheckCircle } from "lucide-react-native";
 import { spacing, radius, typography } from "../theme/colors";
 import { Badge, SectionHeader } from "../components";
 import { paymentsApi } from "../api";
 import { useTheme } from "../store/themeStore";
+import { useNavigationStore } from "../store/navigationStore";
+import AppAlert from "../components/AppAlert";
 
 const tabs = ["All", "Paid", "Pending"];
 
 export default function PaymentsScreen() {
   const colors = useTheme();
-  const styles = getStyles(colors); // 👈 styles ab colors ke saath dynamically banti hain
+  const styles = getStyles(colors);
+  const { screen } = useNavigationStore();
 
   const [tab, setTab] = useState("All");
   const [payments, setPayments] = useState<any[]>([]);
@@ -30,6 +32,8 @@ export default function PaymentsScreen() {
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -45,6 +49,14 @@ export default function PaymentsScreen() {
     setRefreshing(false);
   }, [tab]);
 
+  // Re-fetch every time this screen becomes active
+  useEffect(() => {
+    if (screen === "payments") {
+      setLoading(true);
+      load();
+    }
+  }, [screen]);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -59,7 +71,8 @@ export default function PaymentsScreen() {
       await paymentsApi.markPaid(id);
       load();
     } catch (err: any) {
-      Alert.alert("Error", err.message);
+      setAlertMsg(err.message || "Failed to mark as paid");
+      setAlertVisible(true);
     }
   };
 
@@ -169,11 +182,19 @@ export default function PaymentsScreen() {
           ))
         )}
       </View>
+      <AppAlert
+        visible={alertVisible}
+        type="error"
+        title="Error"
+        message={alertMsg}
+        confirmLabel="OK"
+        onConfirm={() => setAlertVisible(false)}
+      />
     </ScrollView>
   );
 }
 
-// 👇 Ab ye ek FUNCTION hai jo colors leta hai aur styles return karta hai
+// Styles function — receives colors and returns StyleSheet
 function getStyles(colors: any) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },

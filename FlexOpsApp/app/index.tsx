@@ -4,11 +4,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  SafeAreaView,
   StatusBar,
   Text,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Menu,
   Home,
@@ -20,6 +20,8 @@ import {
 import { spacing, typography } from "../src/theme/colors";
 import { useAuthStore } from "../src/store/authStore";
 import { useThemeStore } from "../src/store/themeStore";
+import { useLanguageStore, useTranslation } from "../src/store/languageStore";
+import { useNavigationStore, Screen } from "../src/store/navigationStore";
 import LoginScreen from "../src/screens/LoginScreen";
 import DrawerContent from "../src/components/DrawerContent";
 import DashboardScreen from "../src/screens/DashboardScreen";
@@ -29,17 +31,10 @@ import PlansScreen from "../src/screens/PlansScreen";
 import PaymentsScreen from "../src/screens/PaymentsScreen";
 import AskAIScreen from "../src/screens/AskAIScreen";
 import ExercisesScreen from "../src/screens/ExercisesScreen";
+import ExerciseDetailScreen from "../src/screens/ExerciseDetailScreen";
 import ProfileScreen from "../src/screens/ProfileScreen";
-
-type Screen =
-  | "index"
-  | "attendance"
-  | "members"
-  | "plans"
-  | "payments"
-  | "exercises"
-  | "askai"
-  | "profile";
+import AddMemberScreen from "../src/screens/AddMemberScreen";
+import TrainersScreen from "../src/screens/TrainersScreen";
 
 const screenMap: Record<Screen, React.ComponentType> = {
   index: DashboardScreen,
@@ -48,39 +43,34 @@ const screenMap: Record<Screen, React.ComponentType> = {
   plans: PlansScreen,
   payments: PaymentsScreen,
   exercises: ExercisesScreen,
+  exerciseDetail: ExerciseDetailScreen,
   askai: AskAIScreen,
   profile: ProfileScreen,
-};
-
-const screenTitles: Record<Screen, string> = {
-  index: "Dashboard",
-  attendance: "Attendance",
-  members: "Members",
-  plans: "Plans",
-  payments: "Payments",
-  exercises: "Exercises",
-  askai: "Ask AI",
-  profile: "Profile",
+  addMember: AddMemberScreen,
+  trainers: TrainersScreen,
 };
 
 const bottomTabs = [
-  { key: "index" as Screen, icon: Home, label: "Home" },
-  { key: "attendance" as Screen, icon: CalendarCheck, label: "Attendance" },
-  { key: "exercises" as Screen, icon: Dumbbell, label: "Videos" },
-  { key: "profile" as Screen, icon: User, label: "Profile" },
+        { key: "index" as Screen, icon: Home, labelKey: "dashboard" },
+        { key: "attendance" as Screen, icon: CalendarCheck, labelKey: "attendance" },
+        { key: "exercises" as Screen, icon: Dumbbell, labelKey: "exercises" },
+        { key: "profile" as Screen, icon: User, labelKey: "profile" },
 ];
 
 export default function App() {
   const { token, isLoading, loadFromStorage } = useAuthStore();
   const { colors, loadTheme } = useThemeStore();
-  const styles = getStyles(colors); // 👈 styles ab colors ke saath dynamically banti hain
+  const { loadLanguage } = useLanguageStore();
+  const { t } = useTranslation();
+  const styles = getStyles(colors);
 
-  const [screen, setScreen] = useState<Screen>("index");
+  const { screen, setScreen } = useNavigationStore();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     loadFromStorage();
     loadTheme();
+    loadLanguage();
   }, []);
 
   // Splash / loading
@@ -113,7 +103,7 @@ export default function App() {
   const ActiveScreen = screenMap[screen];
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
       {/* Top Header */}
@@ -124,7 +114,7 @@ export default function App() {
         >
           <Menu size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{screenTitles[screen]}</Text>
+        <Text style={styles.headerTitle}>{t((screen === 'index' ? 'dashboard' : screen) as any)}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -143,7 +133,7 @@ export default function App() {
               <React.Fragment key="fab-group">
                 <TouchableOpacity
                   style={styles.fab}
-                  onPress={() => setScreen("members")}
+                  onPress={() => setScreen("addMember")}
                   activeOpacity={0.8}
                 >
                   <Plus size={24} color={colors.textPrimary} />
@@ -160,7 +150,7 @@ export default function App() {
                   <Text
                     style={[styles.tabLabel, isActive && styles.tabLabelActive]}
                   >
-                    {tab.label}
+                    {t(tab.labelKey as any)}
                   </Text>
                 </TouchableOpacity>
               </React.Fragment>
@@ -179,7 +169,7 @@ export default function App() {
               <Text
                 style={[styles.tabLabel, isActive && styles.tabLabelActive]}
               >
-                {tab.label}
+                {t(tab.labelKey as any)}
               </Text>
             </TouchableOpacity>
           );
@@ -194,11 +184,6 @@ export default function App() {
         onRequestClose={() => setDrawerOpen(false)}
       >
         <View style={styles.drawerOverlay}>
-          <TouchableOpacity
-            style={styles.drawerBackdrop}
-            onPress={() => setDrawerOpen(false)}
-            activeOpacity={1}
-          />
           <View style={styles.drawer}>
             <DrawerContent
               activeScreen={screen}
@@ -208,13 +193,17 @@ export default function App() {
               }}
             />
           </View>
+          <TouchableOpacity
+            style={styles.drawerBackdrop}
+            onPress={() => setDrawerOpen(false)}
+            activeOpacity={1}
+          />
         </View>
       </Modal>
     </SafeAreaView>
   );
 }
 
-// 👇 Ab ye ek FUNCTION hai jo colors leta hai aur styles return karta hai
 function getStyles(colors: any) {
   return StyleSheet.create({
     splash: {

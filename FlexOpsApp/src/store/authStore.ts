@@ -8,6 +8,25 @@ interface AuthUser {
   ownerName?: string;
   gymName?: string;
   email?: string;
+  phone?: string;
+  alternatePhone?: string;
+  address?: string;
+  aadharNumber?: string;
+  panNumber?: string;
+  joiningDate?: string;
+  gymAddress?: string;
+  gymPhone?: string;
+  gymEmail?: string;
+  features?: {
+    members?: boolean;
+    payments?: boolean;
+    trainers?: boolean;
+    exercises?: boolean;
+    askai?: boolean;
+    reports?: boolean;
+  };
+  subscriptionStatus?: string;
+  subscriptionEnd?: string | null;
 }
 
 interface AuthState {
@@ -17,6 +36,8 @@ interface AuthState {
   setToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   loadFromStorage: () => Promise<void>;
+  updateUser: (patch: Partial<AuthUser>) => void;
+  fetchMe: () => Promise<void>;
 }
 
 function decodeJwt(token: string): AuthUser | null {
@@ -34,6 +55,25 @@ function decodeJwt(token: string): AuthUser | null {
   }
 }
 
+const mergeMe = (state: AuthUser, data: any): AuthUser => ({
+  ...state,
+  ownerName: data.name,
+  email: data.email,
+  phone: data.phone,
+  alternatePhone: data.alternatePhone,
+  address: data.address,
+  aadharNumber: data.aadharNumber,
+  panNumber: data.panNumber,
+  joiningDate: data.joiningDate,
+  gymName: data.gymName,
+  gymAddress: data.gymAddress,
+  gymPhone: data.gymPhone,
+  gymEmail: data.gymEmail,
+  features: data.features,
+  subscriptionStatus: data.subscriptionStatus,
+  subscriptionEnd: data.subscriptionEnd,
+});
+
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   user: null,
@@ -43,6 +83,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     await AsyncStorage.setItem('token', token);
     const user = decodeJwt(token);
     set({ token, user });
+    try {
+      const { authApi } = await import('../api');
+      const data = await authApi.getMe();
+      set((state) => ({ user: state.user ? mergeMe(state.user, data) : state.user }));
+    } catch {}
   },
 
   logout: async () => {
@@ -50,14 +95,36 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token: null, user: null });
   },
 
+  updateUser: (patch: Partial<AuthUser>) =>
+    set((state) => {
+      if (!state.user) return state;
+      const updated = { ...state.user, ...patch };
+      const changed = (Object.keys(patch) as (keyof AuthUser)[]).some(
+        (k) => state.user![k] !== patch[k],
+      );
+      return changed ? { user: updated } : state;
+    }),
+
+  fetchMe: async () => {
+    try {
+      const { authApi } = await import('../api');
+      const data = await authApi.getMe();
+      set((state) => ({ user: state.user ? mergeMe(state.user, data) : state.user }));
+    } catch {}
+  },
+
   loadFromStorage: async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (token) {
         const user = decodeJwt(token);
-        // Check token expiry
         if (user && (user as any).exp && (user as any).exp * 1000 > Date.now()) {
           set({ token, user, isLoading: false });
+          try {
+            const { authApi } = await import('../api');
+            const data = await authApi.getMe();
+            set((state) => ({ user: state.user ? mergeMe(state.user, data) : state.user }));
+          } catch {}
           return;
         }
         await AsyncStorage.removeItem('token');

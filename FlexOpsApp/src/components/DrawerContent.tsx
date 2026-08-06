@@ -1,42 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import {
   LayoutDashboard, Users, CreditCard, Dumbbell, Brain,
-  CalendarCheck, ClipboardList, LogOut,
+  CalendarCheck, ClipboardList, LogOut, UserCog, Lock,
 } from 'lucide-react-native';
-import { spacing, typography, darkColors } from '../theme/colors';
+import { spacing, typography } from '../theme/colors';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
-
-const sections = [
-  {
-    title: 'MAIN',
-    items: [
-      { label: 'Dashboard', icon: LayoutDashboard, screen: 'index' },
-      { label: 'Attendance', icon: CalendarCheck, screen: 'attendance' },
-    ],
-  },
-  {
-    title: 'MEMBERS',
-    items: [
-      { label: 'Members', icon: Users, screen: 'members' },
-      { label: 'Plans', icon: ClipboardList, screen: 'plans' },
-    ],
-  },
-  {
-    title: 'BUSINESS',
-    items: [
-      { label: 'Payments', icon: CreditCard, screen: 'payments' },
-    ],
-  },
-  {
-    title: 'INSIGHTS',
-    items: [
-      { label: 'Exercises', icon: Dumbbell, screen: 'exercises' },
-      { label: 'Ask AI', icon: Brain, screen: 'askai' },
-    ],
-  },
-];
+import { useTranslation } from '../store/languageStore';
+import AppAlert from './AppAlert';
 
 interface DrawerContentProps {
   activeScreen: string;
@@ -45,7 +17,65 @@ interface DrawerContentProps {
 
 export default function DrawerContent({ activeScreen, onNavigate }: DrawerContentProps) {
   const { isDark, colors, toggleTheme } = useThemeStore();
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
+  const { t } = useTranslation();
+  const features = user?.features || {};
+
+  const [lockAlert, setLockAlert] = useState(false);
+
+  // feature key → drawer screen key mapping
+  const featureKey: Record<string, string> = {
+    members: 'members',
+    payments: 'payments',
+    trainers: 'trainers',
+    exercises: 'exercises',
+    askai: 'askai',
+  };
+
+  const isLocked = (screen: string): boolean => {
+    const fk = Object.keys(featureKey).find(k => featureKey[k] === screen);
+    if (!fk) return false;
+    return features[fk as keyof typeof features] === false;
+  };
+
+  const handleNav = (screen: string) => {
+    if (isLocked(screen)) {
+      setLockAlert(true);
+      return;
+    }
+    onNavigate(screen);
+  };
+
+  const sections = [
+    {
+      title: 'MAIN',
+      items: [
+        { labelKey: 'dashboard', icon: LayoutDashboard, screen: 'index' },
+        { labelKey: 'attendance', icon: CalendarCheck, screen: 'attendance' },
+      ],
+    },
+    {
+      title: 'MEMBERS',
+      items: [
+        { labelKey: 'members', icon: Users, screen: 'members' },
+        { labelKey: 'plans', icon: ClipboardList, screen: 'plans' },
+        { labelKey: 'trainers', icon: UserCog, screen: 'trainers' },
+      ],
+    },
+    {
+      title: 'BUSINESS',
+      items: [
+        { labelKey: 'payments', icon: CreditCard, screen: 'payments' },
+      ],
+    },
+    {
+      title: 'INSIGHTS',
+      items: [
+        { labelKey: 'exercises', icon: Dumbbell, screen: 'exercises' },
+        { labelKey: 'askai', icon: Brain, screen: 'askai' },
+      ],
+    },
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -69,19 +99,24 @@ export default function DrawerContent({ activeScreen, onNavigate }: DrawerConten
           {section.items.map(item => {
             const Icon = item.icon;
             const isActive = activeScreen === item.screen;
+            const locked = isLocked(item.screen);
             return (
               <TouchableOpacity
-                key={item.label}
+                key={item.labelKey}
                 style={[styles.navItem, isActive && { backgroundColor: colors.surfaceElevated }]}
-                onPress={() => onNavigate(item.screen)}
+                onPress={() => handleNav(item.screen)}
                 activeOpacity={0.7}
               >
                 {isActive && <View style={[styles.activeBar, { backgroundColor: colors.primary }]} />}
-                <Icon size={18} color={isActive ? colors.primary : colors.textSecondary} />
-                <Text style={[styles.navLabel, { color: isActive ? colors.primary : colors.textSecondary },
-                  isActive && { fontWeight: '600' }]}>
-                  {item.label}
+                <Icon size={18} color={locked ? colors.textMuted : isActive ? colors.primary : colors.textSecondary} />
+                <Text style={[
+                  styles.navLabel,
+                  { color: locked ? colors.textMuted : isActive ? colors.primary : colors.textSecondary },
+                  isActive && { fontWeight: '600' },
+                ]}>
+                  {t(item.labelKey as any)}
                 </Text>
+                {locked && <Lock size={13} color={colors.textMuted} style={{ marginLeft: 'auto' }} />}
               </TouchableOpacity>
             );
           })}
@@ -92,7 +127,6 @@ export default function DrawerContent({ activeScreen, onNavigate }: DrawerConten
       <View style={styles.bottom}>
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        {/* Dark Mode Toggle */}
         <View style={styles.darkModeRow}>
           <View style={styles.darkModeLeft}>
             <Text style={{ fontSize: 16 }}>{isDark ? '🌙' : '☀️'}</Text>
@@ -108,12 +142,34 @@ export default function DrawerContent({ activeScreen, onNavigate }: DrawerConten
           />
         </View>
 
-        {/* Logout */}
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.7}>
           <LogOut size={18} color={colors.error} />
-          <Text style={[styles.logoutText, { color: colors.error }]}>Log Out</Text>
+          <Text style={[styles.logoutText, { color: colors.error }]}>{t('logout')}</Text>
         </TouchableOpacity>
+
+        {/* Powered by */}
+        <View style={styles.poweredRow}>
+          <Text style={[styles.poweredText, { color: colors.textMuted }]}>Powered by </Text>
+          <Text
+            style={[styles.poweredLink, { color: colors.primary }]}
+            onPress={() => {
+              const { Linking } = require('react-native');
+              Linking.openURL('https://tcpitsolution.click');
+            }}
+          >
+            TCP IT Solution
+          </Text>
+        </View>
       </View>
+
+      <AppAlert
+        visible={lockAlert}
+        type="warning"
+        title="Feature Locked 🔒"
+        message="This feature is not available in your current plan. Please contact admin to unlock it."
+        confirmLabel="OK"
+        onConfirm={() => setLockAlert(false)}
+      />
     </View>
   );
 }
@@ -153,4 +209,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: 12,
   },
   logoutText: { ...typography.body },
+  poweredRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingTop: spacing.sm, paddingBottom: spacing.xs,
+  },
+  poweredText: { ...typography.caption },
+  poweredLink: { ...typography.caption, fontWeight: '700', textDecorationLine: 'underline' },
 });
