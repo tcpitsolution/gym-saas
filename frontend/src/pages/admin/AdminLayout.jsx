@@ -4,7 +4,8 @@ import { useAuth } from "../../context/AuthContext";
 
 const navItems = [
   { path: "/admin/dashboard",      label: "Dashboard",        icon: "⚡" },
-  { path: "/admin/gyms",           label: "Total Gym Owners", icon: "🏋️" },
+  { path: "/admin/gyms",           label: "Gym Owners",       icon: "🏋️" },
+  { path: "/admin/access-control", label: "Access Control",   icon: "🔐" },
   { path: "/admin/create-gym",     label: "Add Gym Partner",  icon: "➕" },
   { path: "/admin/demo-requests",  label: "Demo Requests",    icon: "📋" },
   { path: "/admin/reports",        label: "Reports",          icon: "📊" },

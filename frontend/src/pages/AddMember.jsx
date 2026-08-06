@@ -114,7 +114,7 @@ export default function AddMember() {
   // ---------- Photo: compress + resize (used by both library & camera) ----------
   const compressAndSetPhoto = (fileOrBlob) => {
     if (fileOrBlob.size > MAX_SIZE_MB * 1024 * 1024) {
-      toast.error(`Image ${MAX_SIZE_MB}MB se chhoti honi chahiye`);
+      toast.error(`Image must be smaller than ${MAX_SIZE_MB}MB`);
       return;
     }
     const img = new Image();
@@ -168,7 +168,7 @@ export default function AddMember() {
         videoRef.current.srcObject = stream;
       }
     } catch (err) {
-      setCameraError("Camera access denied ya available nahi hai.");
+      setCameraError("Camera access denied or not available.");
     }
   };
 

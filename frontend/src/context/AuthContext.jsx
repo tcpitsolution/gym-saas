@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
+import api from "../api/axios";
 
 const AuthContext = createContext();
 
@@ -15,12 +16,14 @@ const INACTIVITY_LIMIT = 60 * 1000; // 1 minute
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [features, setFeatures] = useState({});
   const payload = parseToken(token);
   const timerRef = useRef(null);
 
   const logout = useCallback(() => {
     localStorage.removeItem("token");
     setToken(null);
+    setFeatures({});
   }, []);
 
   const resetTimer = useCallback(() => {
@@ -32,6 +35,12 @@ export function AuthProvider({ children }) {
     localStorage.setItem("token", newToken);
     setToken(newToken);
   };
+
+  // Fetch features from /auth/me whenever token changes
+  useEffect(() => {
+    if (!token || payload.role === "superadmin") return;
+    api.get("/auth/me").then((res) => setFeatures(res.data.features || {})).catch(() => {});
+  }, [token]);
 
   useEffect(() => {
     if (!token) {
@@ -48,7 +57,7 @@ export function AuthProvider({ children }) {
   }, [token, resetTimer]);
 
   return (
-    <AuthContext.Provider value={{ token, login, logout, role: payload.role, userId: payload.userId, gymId: payload.gymId, ownerName: payload.ownerName, gymName: payload.gymName }}>
+    <AuthContext.Provider value={{ token, login, logout, role: payload.role, userId: payload.userId, gymId: payload.gymId, ownerName: payload.ownerName, gymName: payload.gymName, features }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,6 +4,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import Home from "./pages/Home";
 import Features from "./pages/Features";
+import DownloadApp from './pages/DownloadApp';
 import Apps from "./pages/Apps";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
@@ -20,6 +21,7 @@ import CreateGymAccount from "./pages/admin/CreateGymAccount";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminPlans from "./pages/admin/AdminPlans";
+import GymAccessControl from "./pages/admin/GymAccessControl";
 import Attendance from "./pages/Attendance";
 import Plans from "./pages/Plans";
 import Payments from "./pages/Payments";
@@ -58,8 +60,23 @@ function AppRoutes() {
       <Route path="/apps" element={<Apps />} />
       <Route path="/pricing" element={<Pricing />} />
       <Route path="/contact" element={<Contact />} />
-      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
-      <Route path="/signup" element={<PublicOnlyRoute><Signup /></PublicOnlyRoute>} />
+      <Route
+        path="/login"
+        element={
+          <PublicOnlyRoute>
+            <Login />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <PublicOnlyRoute>
+            <Signup />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route path="/downloadapp" element={<DownloadApp />} />
 
       <Route
         path="/attendance"
@@ -109,7 +126,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      
+
       <Route
         path="/ask-ai"
         element={
@@ -198,6 +215,14 @@ function AppRoutes() {
         element={
           <AdminRoute>
             <AdminReports />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/access-control"
+        element={
+          <AdminRoute>
+            <GymAccessControl />
           </AdminRoute>
         }
       />

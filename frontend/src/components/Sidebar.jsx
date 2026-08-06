@@ -3,6 +3,17 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useState } from "react";
 
+// Feature key mapped to nav path
+const FEATURE_MAP = {
+  "/members":    "members",
+  "/members/new": "members",
+  "/attendance": "members",
+  "/payments":   "payments",
+  "/trainers":   "trainers",
+  "/reports":    "reports",
+  "/ask-ai":     "askai",
+};
+
 const navGroups = [
   {
     label: "Main",
@@ -38,13 +49,20 @@ const navGroups = [
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation();
-  const { logout, gymName } = useAuth();
+  const { logout, gymName, features } = useAuth();
   const { dark, toggle } = useTheme();
   const navigate = useNavigate();
+  const [lockedTooltip, setLockedTooltip] = useState(null);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const isLocked = (path) => {
+    const key = FEATURE_MAP[path];
+    if (!key) return false;
+    return features[key] === false;
   };
 
   const sidebarContent = (
@@ -90,7 +108,19 @@ export default function Sidebar({ open, onClose }) {
             </p>
             {group.items.map((item) => {
               const active = location.pathname === item.path;
-              return (
+              const locked = isLocked(item.path);
+              return locked ? (
+                <div
+                  key={item.path}
+                  className="flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl mb-0.5 text-sm font-medium cursor-not-allowed relative"
+                  style={{ background: "transparent", color: "rgba(255,255,255,0.2)", borderLeft: "2px solid transparent" }}
+                  title="Contact admin to unlock this feature"
+                >
+                  <span className="text-base opacity-40">{item.icon}</span>
+                  {item.label}
+                  <span className="ml-auto text-xs" style={{ color: "rgba(255,90,54,0.6)" }}>🔒</span>
+                </div>
+              ) : (
                 <Link
                   key={item.path}
                   to={item.path}

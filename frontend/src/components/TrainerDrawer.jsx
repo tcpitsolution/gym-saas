@@ -1,9 +1,11 @@
 import { useState } from "react";
 import api from "../api/axios";
 import { useToast } from "../context/ToastContext";
+import ConfirmDialog from "./ConfirmDialog";
 
 export default function TrainerDrawer({ trainer, onClose, onRemoved }) {
   const [removing, setRemoving] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const toast = useToast();
 
   if (!trainer) return null;
@@ -16,7 +18,6 @@ export default function TrainerDrawer({ trainer, onClose, onRemoved }) {
     .toUpperCase();
 
   const handleRemove = async () => {
-    if (!window.confirm(`Remove trainer "${trainer.name}"? This cannot be undone.`)) return;
     setRemoving(true);
     try {
       await api.delete(`/trainers/${trainer._id}`);
@@ -126,7 +127,7 @@ export default function TrainerDrawer({ trainer, onClose, onRemoved }) {
               WhatsApp
             </a>
             <button
-              onClick={handleRemove}
+              onClick={() => setShowConfirm(true)}
               disabled={removing}
               className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50"
               style={{ background: "rgba(255,107,107,0.1)", color: "#ff6b6b" }}
@@ -157,6 +158,16 @@ export default function TrainerDrawer({ trainer, onClose, onRemoved }) {
           ))}
         </div>
       </div>
+      {showConfirm && (
+        <ConfirmDialog
+          title="Remove Trainer"
+          message={`Are you sure you want to remove "${trainer.name}"? This action cannot be undone.`}
+          confirmLabel="Remove"
+          confirmColor="#ff6b6b"
+          onConfirm={() => { setShowConfirm(false); handleRemove(); }}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
     </>
   );
 }

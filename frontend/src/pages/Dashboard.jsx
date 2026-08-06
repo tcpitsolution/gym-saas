@@ -488,6 +488,114 @@ export default function Dashboard() {
           )}
         </>
       )}
+
+      {/* ── Upgrade / Pricing CTA Section ── */}
+      <Animate variant="fadeUp" delay={820}>
+        <div className="mt-10 mb-4">
+          <div
+            className="rounded-3xl p-8 md:p-10 text-center relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,90,54,0.12) 0%, rgba(255,140,66,0.08) 100%)",
+              border: "1px solid rgba(255,90,54,0.25)",
+            }}
+          >
+            {/* Glow blob */}
+            <div
+              style={{
+                position: "absolute", top: "-60px", right: "-60px",
+                width: "220px", height: "220px", borderRadius: "50%",
+                background: "rgba(255,90,54,0.08)", filter: "blur(60px)", pointerEvents: "none",
+              }}
+            />
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: "#FF5A36" }}>
+              🚀 Upgrade Your Plan
+            </p>
+            <h2
+              className="text-2xl md:text-3xl font-black mb-3"
+              style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
+            >
+              Unlock the Full Power of FlexOps
+            </h2>
+            <p className="text-sm mb-8 max-w-lg mx-auto" style={{ color: "var(--text-faint)" }}>
+              Get AI insights, advanced reports, exercise library, trainer management and more — all in one platform built for serious gym owners.
+            </p>
+
+            {/* Feature highlights */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8 text-left">
+              {[
+                { icon: "🤖", label: "AI Assistant", desc: "Smart gym insights" },
+                { icon: "📊", label: "Advanced Reports", desc: "Revenue & churn analytics" },
+                { icon: "💪", label: "Exercise Library", desc: "100+ guided workouts" },
+                { icon: "🏋️", label: "Trainer Management", desc: "Staff & schedules" },
+                { icon: "💳", label: "Payment Tracking", desc: "Auto dues & reminders" },
+                { icon: "📱", label: "Mobile App", desc: "iOS & Android access" },
+              ].map((f) => (
+                <div
+                  key={f.label}
+                  className="flex items-start gap-3 p-3 rounded-xl"
+                  style={{ background: "var(--bg-card-2)", border: "1px solid var(--border-subtle)" }}
+                >
+                  <span className="text-xl shrink-0">{f.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{f.label}</p>
+                    <p className="text-xs" style={{ color: "var(--text-faint)" }}>{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pricing cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {[
+                { label: "1 Month", price: "₹999", duration: "30 days", popular: false },
+                { label: "3 Months", price: "₹2,499", duration: "90 days", popular: true },
+                { label: "1 Year", price: "₹7,999", duration: "365 days", popular: false },
+              ].map((p) => (
+                <div
+                  key={p.label}
+                  className="rounded-2xl p-5 relative"
+                  style={{
+                    background: p.popular ? "rgba(255,90,54,0.12)" : "var(--bg-card)",
+                    border: p.popular ? "1.5px solid rgba(255,90,54,0.5)" : "1px solid var(--border-subtle)",
+                  }}
+                >
+                  {p.popular && (
+                    <span
+                      className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full"
+                      style={{ background: "#FF5A36", color: "#fff" }}
+                    >
+                      Most Popular
+                    </span>
+                  )}
+                  <p className="font-semibold mb-1" style={{ color: "var(--text-primary)" }}>{p.label}</p>
+                  <p className="text-2xl font-black mb-1" style={{ fontFamily: "var(--font-display)", color: p.popular ? "#FF5A36" : "var(--text-primary)" }}>
+                    {p.price}
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--text-faint)" }}>{p.duration}</p>
+                </div>
+              ))}
+            </div>
+
+            <a
+              href="https://wa.me/919999999999?text=Hi%2C%20I%20want%20to%20upgrade%20my%20FlexOps%20plan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-sm transition"
+              style={{
+                background: "linear-gradient(135deg, #FF5A36, #ff8c42)",
+                color: "#fff",
+                textDecoration: "none",
+                boxShadow: "0 4px 24px rgba(255,90,54,0.35)",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.9"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+            >
+              💬 Contact Admin to Upgrade
+            </a>
+            <p className="text-xs mt-3" style={{ color: "var(--text-faint)" }}>No hidden charges · Cancel anytime</p>
+          </div>
+        </div>
+      </Animate>
     </Layout>
   );
 }

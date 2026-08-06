@@ -124,7 +124,15 @@ export default function ManageGyms() {
                       )}
                       {sub.endDate && (
                         <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-                          Expires: <span style={{ color: "rgba(255,255,255,0.5)" }}>{new Date(sub.endDate).toLocaleDateString("en-IN")}</span>
+                          Expires: <span style={{ color: new Date(sub.endDate) < new Date() ? "#ff6b6b" : "rgba(255,255,255,0.5)" }}>
+                            {new Date(sub.endDate).toLocaleDateString("en-IN")}
+                            {new Date(sub.endDate) < new Date() ? " ⚠️ Expired" : ""}
+                          </span>
+                        </p>
+                      )}
+                      {!sub.endDate && (
+                        <p className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(255,107,107,0.12)", color: "#ff6b6b" }}>
+                          ❌ No Payment
                         </p>
                       )}
                       <p className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>

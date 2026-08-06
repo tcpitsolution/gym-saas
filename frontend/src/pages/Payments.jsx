@@ -2,6 +2,7 @@
   import api from "../api/axios";
   import Layout from "../components/Layout";
   import Animate from "../components/Animate";
+  import { useToast } from "../context/ToastContext";
 
   const modeColor = {
     cash: "#2DD4C4",
@@ -21,6 +22,7 @@
     const [from, setFrom] = useState("");
     const [to, setTo] = useState("");
     const [actionId, setActionId] = useState(null);
+    const toast = useToast();
 
     const fetchData = async () => {
       setLoading(true);
@@ -55,7 +57,7 @@
         await api.patch(`/payments/${id}/mark-paid`);
         fetchData();
       } catch (err) {
-        alert(err.response?.data?.error || "Failed");
+        toast.error(err.response?.data?.error || "Failed to mark as paid");
       } finally {
         setActionId(null);
       }
@@ -65,9 +67,9 @@
       setActionId(id);
       try {
         await api.post(`/payments/${id}/remind`);
-        alert("Reminder sent!");
+        toast.success("Reminder sent successfully!");
       } catch (err) {
-        alert(err.response?.data?.error || "Failed to send reminder");
+        toast.error(err.response?.data?.error || "Failed to send reminder");
       } finally {
         setActionId(null);
       }

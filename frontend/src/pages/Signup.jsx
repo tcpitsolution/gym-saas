@@ -284,8 +284,7 @@ export default function RequestDemo() {
                   className="text-sm mb-6"
                   style={{ color: "var(--text-muted)" }}
                 >
-                  Hamari team aapko jald hi contact karegi aur aapka gym account
-                  setup karegi.
+                  Our team will contact you shortly and set up your gym account.
                 </p>
                 <Link
                   to="/login"

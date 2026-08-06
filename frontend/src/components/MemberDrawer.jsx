@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import api from "../api/axios";
 import { useToast } from "../context/ToastContext";
+import ConfirmDialog from "./ConfirmDialog";
 
 const MAX_SIZE_MB = 2;
 const MAX_DIM = 500;
@@ -9,6 +10,7 @@ export default function MemberDrawer({ member, onClose, onRemoved }) {
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkInMsg, setCheckInMsg] = useState("");
   const [removing, setRemoving] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const toast = useToast();
 
   // Local photo state so UI updates instantly after upload
@@ -42,7 +44,29 @@ export default function MemberDrawer({ member, onClose, onRemoved }) {
     try {
       await api.patch(`/members/${member._id}`, { photo: dataUrl });
       setPhoto(dataUrl);
-      toast.success("Photo updated");
+
+      // Face recognition ke liye is photo ka embedding banwao.
+      // Photo save ho chuki hai, isliye yeh fail bhi ho to member
+      // update poora hi mana jayega — bas face-scan tab tak match nahi karega.
+      try {
+        const enrollRes = await api.post(`/members/${member._id}/enroll-face`, {
+          image: dataUrl,
+        });
+        if (!enrollRes.data.success) {
+          toast.error(
+            enrollRes.data.error ||
+              "Photo saved, but face not detected clearly",
+          );
+        } else {
+          toast.success("Photo updated");
+        }
+      } catch {
+        toast.success("Photo updated");
+        toast.error(
+          "Face enrollment failed — attendance scan will not match this photo",
+        );
+      }
+
       onRemoved?.(); // reuse existing refresh callback to reload list
     } catch (err) {
       toast.error(err.response?.data?.error || "Failed to update photo");
@@ -53,7 +77,7 @@ export default function MemberDrawer({ member, onClose, onRemoved }) {
 
   const compressAndSave = (fileOrBlob) => {
     if (fileOrBlob.size > MAX_SIZE_MB * 1024 * 1024) {
-      toast.error(`Image ${MAX_SIZE_MB}MB se chhoti honi chahiye`);
+      toast.error(`Image must be smaller than ${MAX_SIZE_MB}MB`);
       return;
     }
     const img = new Image();
@@ -102,7 +126,7 @@ export default function MemberDrawer({ member, onClose, onRemoved }) {
       streamRef.current = stream;
       if (videoRef.current) videoRef.current.srcObject = stream;
     } catch {
-      setCameraError("Camera access denied ya available nahi hai.");
+      setCameraError("Camera access denied or not available.");
     }
   };
 
@@ -146,10 +170,6 @@ export default function MemberDrawer({ member, onClose, onRemoved }) {
   };
 
   const handleRemove = async () => {
-    if (
-      !window.confirm(`Remove member "${member.name}"? This cannot be undone.`)
-    )
-      return;
     setRemoving(true);
     try {
       await api.delete(`/members/${member._id}`);
@@ -372,7 +392,7 @@ export default function MemberDrawer({ member, onClose, onRemoved }) {
               WhatsApp
             </a>
             <button
-              onClick={handleRemove}
+              onClick={() => setShowConfirm(true)}
               disabled={removing}
               className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-50"
               style={{ background: "rgba(255,107,107,0.1)", color: "#ff6b6b" }}
@@ -444,6 +464,17 @@ export default function MemberDrawer({ member, onClose, onRemoved }) {
           )}
         </div>
       </div>
+
+      {showConfirm && (
+        <ConfirmDialog
+          title="Remove Member"
+          message={`Are you sure you want to remove "${member.name}"? This action cannot be undone.`}
+          confirmLabel="Remove"
+          confirmColor="#ff6b6b"
+          onConfirm={() => { setShowConfirm(false); handleRemove(); }}
+          onCancel={() => setShowConfirm(false)}
+        />
+      )}
 
       {/* NEW: Full-size Photo Viewer Modal */}
       {showPhotoViewer && photo && (

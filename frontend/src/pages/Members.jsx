@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import Animate from "../components/Animate";
 import MemberDrawer from "../components/MemberDrawer";
+import { useToast } from "../context/ToastContext";
 
 const statusTabs = [
   { key: "all", label: "All" },
@@ -27,6 +28,7 @@ export default function Members() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+  const toast = useToast();
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -55,9 +57,9 @@ export default function Members() {
     setActionLoadingId(memberId);
     try {
       await api.post("/attendance/checkin", { memberId });
-      alert("Checked in!");
+      toast.success("Checked in successfully!");
     } catch (err) {
-      alert(err.response?.data?.error || "Check-in failed");
+      toast.error(err.response?.data?.error || "Check-in failed");
     } finally {
       setActionLoadingId(null);
     }
