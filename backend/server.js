@@ -29,12 +29,6 @@ app.use(
 );
 app.use(express.json({ limit: "20mb" }));
 
-// DB connect
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("DB error", err.message));
-
 // health route
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
@@ -52,7 +46,6 @@ const trainerRoutes = require("./routes/trainers");
 const aiRoutes = require("./routes/ai");
 const notificationsRoute = require("./routes/notifications");
 const { startMembershipCron } = require("./jobs/membershipCron");
-startMembershipCron();
 
 // routes mount
 app.use("/api/admin", adminRoutes);
@@ -70,6 +63,15 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationsRoute);
 
+// DB connect — cron ab sirf tab start hoga jab DB connect ho chuka ho
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB connected");
+    startMembershipCron();
+  })
+  .catch((err) => console.error("DB error", err.message));
+
 // Load face recognition models once, then start accepting requests.
 loadModels()
   .then(() => {
@@ -80,8 +82,6 @@ loadModels()
   })
   .catch((err) => {
     console.error("Failed to load face recognition models:", err.message);
-    // Start the server anyway so the rest of the app still works;
-    // face-scan/enroll-face routes will error until this is fixed.
     app.listen(process.env.PORT || 5000, () => {
       console.log(
         "Server running on",
