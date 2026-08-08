@@ -28,7 +28,6 @@ async function seedPlans() {
     ]);
   }
 }
-seedPlans();
 
 const getPlanMap = async () => {
   const plans = await AdminPlan.find({ active: true });

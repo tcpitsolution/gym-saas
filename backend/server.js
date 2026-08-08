@@ -63,12 +63,13 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationsRoute);
 
-// DB connect — cron ab sirf tab start hoga jab DB connect ho chuka ho
+// DB connect — cron aur seedPlans ab sirf tab chalega jab DB connect ho chuka ho
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB connected");
     startMembershipCron();
+    adminRoutes.seedPlans();
   })
   .catch((err) => console.error("DB error", err.message));
 
