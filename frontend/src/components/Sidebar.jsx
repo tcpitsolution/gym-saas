@@ -5,13 +5,13 @@ import { useState } from "react";
 
 // Feature key mapped to nav path
 const FEATURE_MAP = {
-  "/members":    "members",
+  "/members": "members",
   "/members/new": "members",
   "/attendance": "members",
-  "/payments":   "payments",
-  "/trainers":   "trainers",
-  "/reports":    "reports",
-  "/ask-ai":     "askai",
+  "/payments": "payments",
+  "/trainers": "trainers",
+  "/reports": "reports",
+  "/ask-ai": "askai",
 };
 
 const navGroups = [
@@ -47,6 +47,11 @@ const navGroups = [
   },
 ];
 
+// APK download link — file name on GitHub release must always stay "flexopsapp.apk"
+// so this "latest" link always serves the newest uploaded build automatically.
+const APK_URL =
+  "https://github.com/tcpitsolution/gym-saas/releases/latest/download/flexopsapp.apk";
+
 export default function Sidebar({ open, onClose }) {
   const location = useLocation();
   const { logout, gymName, features } = useAuth();
@@ -75,9 +80,18 @@ export default function Sidebar({ open, onClose }) {
         transition: "background 0.3s ease",
       }}
     >
-      <div className="px-5 py-5 border-b flex items-center justify-between" style={{ borderColor: "var(--border-subtle)" }}>
+      <div
+        className="px-5 py-5 border-b flex items-center justify-between"
+        style={{ borderColor: "var(--border-subtle)" }}
+      >
         <Link to="/" onClick={onClose}>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: "1.2rem", color: "var(--text-primary)" }}>
+          <span
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "1.2rem",
+              color: "var(--text-primary)",
+            }}
+          >
             FLEX<span style={{ color: "var(--brand-orange)" }}>OPS</span>
           </span>
         </Link>
@@ -92,7 +106,10 @@ export default function Sidebar({ open, onClose }) {
       </div>
 
       {gymName && (
-        <p className="px-5 pt-2 text-xs truncate" style={{ color: "var(--text-faint)" }}>
+        <p
+          className="px-5 pt-2 text-xs truncate"
+          style={{ color: "var(--text-faint)" }}
+        >
           {gymName}
         </p>
       )}
@@ -113,12 +130,21 @@ export default function Sidebar({ open, onClose }) {
                 <div
                   key={item.path}
                   className="flex items-center gap-3 px-4 py-2.5 mx-2 rounded-xl mb-0.5 text-sm font-medium cursor-not-allowed relative"
-                  style={{ background: "transparent", color: "rgba(255,255,255,0.2)", borderLeft: "2px solid transparent" }}
+                  style={{
+                    background: "transparent",
+                    color: "rgba(255,255,255,0.2)",
+                    borderLeft: "2px solid transparent",
+                  }}
                   title="Contact admin to unlock this feature"
                 >
                   <span className="text-base opacity-40">{item.icon}</span>
                   {item.label}
-                  <span className="ml-auto text-xs" style={{ color: "rgba(255,90,54,0.6)" }}>🔒</span>
+                  <span
+                    className="ml-auto text-xs"
+                    style={{ color: "rgba(255,90,54,0.6)" }}
+                  >
+                    🔒
+                  </span>
                 </div>
               ) : (
                 <Link
@@ -129,11 +155,14 @@ export default function Sidebar({ open, onClose }) {
                   style={{
                     background: active ? "rgba(255,90,54,0.12)" : "transparent",
                     color: active ? "var(--text-primary)" : "var(--text-muted)",
-                    borderLeft: active ? "2px solid var(--brand-orange)" : "2px solid transparent",
+                    borderLeft: active
+                      ? "2px solid var(--brand-orange)"
+                      : "2px solid transparent",
                   }}
                   onMouseEnter={(e) => {
                     if (!active) {
-                      e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                      e.currentTarget.style.background =
+                        "rgba(255,255,255,0.05)";
                       e.currentTarget.style.color = "var(--text-primary)";
                     }
                   }}
@@ -155,6 +184,25 @@ export default function Sidebar({ open, onClose }) {
 
       <div className="px-3 pb-5">
         <div className="glow-divider mb-3" />
+
+        {/* Download App — direct APK download, always serves latest GitHub release */}
+        <a
+          href={APK_URL}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl w-full text-sm font-medium transition-all duration-150 mb-1"
+          style={{ color: "var(--text-faint)", background: "transparent" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "var(--bg-card-2)";
+            e.currentTarget.style.color = "var(--text-primary)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "var(--text-faint)";
+          }}
+        >
+          <span>📲</span>
+          Download App
+        </a>
+
         {/* Theme toggle */}
         <button
           onClick={toggle}
@@ -206,7 +254,9 @@ export default function Sidebar({ open, onClose }) {
             onClick={onClose}
           />
           {/* Drawer */}
-          <div className="relative z-10 animate-fade-left">{sidebarContent}</div>
+          <div className="relative z-10 animate-fade-left">
+            {sidebarContent}
+          </div>
         </div>
       )}
     </>
