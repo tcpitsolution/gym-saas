@@ -42,13 +42,21 @@ router.post("/", authMiddleware, async (req, res) => {
       start.getTime() + plan.durationDays * 24 * 60 * 60 * 1000,
     );
 
+    // Agar photo hai lekin faceEmbedding nahi diya toh auto-generate karo
+    let resolvedEmbedding = faceEmbedding;
+    if (photo && !faceEmbedding) {
+      try {
+        resolvedEmbedding = await getFaceDescriptor(photo);
+      } catch (_) {}
+    }
+
     const member = await Member.create({
       gymId,
       name,
       phone,
       email,
       photo,
-      faceEmbedding,
+      faceEmbedding: resolvedEmbedding,
       currentPlan: plan._id,
       membershipStart: start,
       membershipEnd: end,
@@ -144,6 +152,17 @@ router.patch("/:id", authMiddleware, async (req, res) => {
     const updates = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
+    }
+
+    // Agar photo update ho rahi hai aur faceEmbedding explicitly nahi diya,
+    // toh photo se automatically embedding generate karo
+    if (req.body.photo && req.body.faceEmbedding === undefined) {
+      try {
+        const descriptor = await getFaceDescriptor(req.body.photo);
+        if (descriptor) updates.faceEmbedding = descriptor;
+      } catch (_) {
+        // face detection fail ho toh silently skip karo, photo toh save hogi
+      }
     }
 
     const member = await Member.findOneAndUpdate(
