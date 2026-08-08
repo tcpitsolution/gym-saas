@@ -1,0 +1,81 @@
+// utils/faceRecognition.js
+//
+// Face detection + descriptor (embedding) generation using face-api.js,
+// running fully on your own Node server — no external API, no quota, no cost.
+//
+// SETUP:
+// 1. npm install face-api.js @tensorflow/tfjs-node canvas
+// 2. Unzip the provided face-api-models.zip so you have a folder like:
+//    <project-root>/models/tiny_face_detector_model-shard1
+//    <project-root>/models/tiny_face_detector_model-weights_manifest.json
+//    <project-root>/models/face_landmark_68_model-shard1
+//    <project-root>/models/face_landmark_68_model-weights_manifest.json
+//    <project-root>/models/face_recognition_model-shard1
+//    <project-root>/models/face_recognition_model-shard2
+//    <project-root>/models/face_recognition_model-weights_manifest.json
+// 3. Call `loadModels()` ONCE when your server starts (see server.js snippet below).
+// 4. Use `getFaceDescriptor(base64Image)` wherever you need to turn a photo into
+//    a 128-length embedding array — both at member-enrollment time and at
+//    attendance-scan time.
+
+const faceapi = require("face-api.js");
+const canvas = require("canvas");
+const path = require("path");
+
+const { Canvas, Image, ImageData } = canvas;
+faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+
+const MODELS_PATH = path.join(__dirname, "..", "models"); // adjust if your folder is elsewhere
+
+let modelsLoaded = false;
+
+async function loadModels() {
+  if (modelsLoaded) return;
+  await faceapi.nets.tinyFaceDetector.loadFromDisk(MODELS_PATH);
+  await faceapi.nets.faceLandmark68Net.loadFromDisk(MODELS_PATH);
+  await faceapi.nets.faceRecognitionNet.loadFromDisk(MODELS_PATH);
+  modelsLoaded = true;
+  console.log("[faceRecognition] models loaded from", MODELS_PATH);
+}
+
+/**
+ * Takes a base64 image (with or without the data:image/...;base64, prefix)
+ * and returns a 128-length face descriptor array, or null if no face found.
+ */
+async function getFaceDescriptor(base64Image) {
+  if (!modelsLoaded) {
+    throw new Error(
+      "Face models not loaded yet — call loadModels() at server startup",
+    );
+  }
+
+  const cleaned = base64Image.replace(/^data:image\/\w+;base64,/, "");
+  const buffer = Buffer.from(cleaned, "base64");
+  const img = await canvas.loadImage(buffer);
+
+  const detection = await faceapi
+    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+
+  if (!detection) return null;
+
+  // Float32Array -> plain array so it stores cleanly in MongoDB
+  return Array.from(detection.descriptor);
+}
+
+function cosineSimilarity(a, b) {
+  if (!a || !b || a.length !== b.length) return -1;
+  let dot = 0,
+    normA = 0,
+    normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return -1;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+module.exports = { loadModels, getFaceDescriptor, cosineSimilarity };

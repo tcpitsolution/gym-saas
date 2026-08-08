@@ -9,6 +9,7 @@ const {
   newMemberWelcomeEmail,
 } = require("../services/emailService");
 const { sendOtp } = require("../services/otpService");
+const { getFaceDescriptor } = require("../utils/faceRecognition");
 
 const router = express.Router();
 
@@ -165,16 +166,31 @@ router.post("/:id/enroll-face", authMiddleware, async (req, res) => {
 
     if (!image) return res.status(400).json({ error: "Image required" });
 
-    // Save the photo — face-scan uses it directly for Gemini vision comparison
+    // Generate the face embedding (128-number descriptor) from the photo.
+    // This is what /api/attendance/face-scan will later compare against.
+    const descriptor = await getFaceDescriptor(image);
+
+    if (!descriptor) {
+      // No face could be detected in the enrollment photo — surfacing this
+      // clearly is important, otherwise the member will silently never be
+      // matchable during attendance scans later.
+      return res.status(200).json({
+        success: false,
+        error:
+          "No face detected in the photo — please retake with better lighting, facing the camera directly.",
+      });
+    }
+
     const member = await Member.findOneAndUpdate(
       { _id: req.params.id, gymId },
-      { $set: { photo: image } },
+      { $set: { photo: image, faceEmbedding: descriptor } },
       { new: true },
     );
     if (!member) return res.status(404).json({ error: "Member not found" });
 
     res.json({ success: true });
   } catch (err) {
+    console.error("[enroll-face] error:", err.message);
     res.status(500).json({ success: false, error: err.message });
   }
 });

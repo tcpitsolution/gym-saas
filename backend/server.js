@@ -9,6 +9,7 @@ const otpRoutes = require("./routes/otp");
 const penaltyRoutes = require("./routes/penalty");
 const messageRoutes = require("./routes/messages");
 const exportRoutes = require("./routes/exports");
+const { loadModels } = require("./utils/faceRecognition");
 const app = express();
 
 // middlewares
@@ -51,7 +52,7 @@ const trainerRoutes = require("./routes/trainers");
 const aiRoutes = require("./routes/ai");
 const notificationsRoute = require("./routes/notifications");
 const { startMembershipCron } = require("./jobs/membershipCron");
-startMembershipCron(); 
+startMembershipCron();
 
 // routes mount
 app.use("/api/admin", adminRoutes);
@@ -69,7 +70,23 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/notifications", notificationsRoute);
 
-
-app.listen(process.env.PORT || 5000, () => {
-  console.log("Server running on", process.env.PORT || 5000);
-});
+// Load face recognition models once, then start accepting requests.
+loadModels()
+  .then(() => {
+    console.log("Face recognition models ready");
+    app.listen(process.env.PORT || 5000, () => {
+      console.log("Server running on", process.env.PORT || 5000);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to load face recognition models:", err.message);
+    // Start the server anyway so the rest of the app still works;
+    // face-scan/enroll-face routes will error until this is fixed.
+    app.listen(process.env.PORT || 5000, () => {
+      console.log(
+        "Server running on",
+        process.env.PORT || 5000,
+        "(face models NOT loaded)",
+      );
+    });
+  });
