@@ -19,8 +19,8 @@ import { useTheme } from "../store/themeStore";
 import { useNavigationStore } from "../store/navigationStore";
 import AppAlert from "../components/AppAlert";
 
-const SCAN_INTERVAL_MS = 4000;
-const MAX_NO_MATCH_RETRIES = 4;
+const SCAN_INTERVAL_MS = 3500;
+const MAX_NO_MATCH_RETRIES = 8;
 
 export default function AttendanceScreen() {
   const colors = useTheme();
@@ -52,6 +52,7 @@ export default function AttendanceScreen() {
   const [matchedMember, setMatchedMember] = useState<any>(null);
   // true when a face is detected in the current frame (turns oval green)
   const [faceDetected, setFaceDetected] = useState(false);
+  const [scanAttempts, setScanAttempts] = useState(0);
 
   // AppAlert
   const [alert, setAlert] = useState<{
@@ -135,6 +136,7 @@ export default function AttendanceScreen() {
     setMatchedMember(null);
     setScanStatus("scanning");
     setFaceDetected(false);
+    setScanAttempts(0);
     noMatchCountRef.current = 0;
     setScanVisible(true);
   };
@@ -157,44 +159,37 @@ export default function AttendanceScreen() {
     isBusyRef.current = true;
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.5,
+        quality: 0.7,
         base64: true,
-        skipProcessing: true,
+        skipProcessing: false,
       });
       const dataUrl = `data:image/jpeg;base64,${photo.base64}`;
-
-      setFaceDetected(true);
 
       const data = await attendanceApi.faceScan(dataUrl);
 
       if (!data.matched) {
         setFaceDetected(false);
         noMatchCountRef.current += 1;
+        setScanAttempts(noMatchCountRef.current);
         if (noMatchCountRef.current >= MAX_NO_MATCH_RETRIES) {
           setScanStatus("unknown");
           stopScanning();
         }
-        // else keep retrying silently
         return;
       }
 
+      setFaceDetected(true);
       setMatchedMember(data.member);
       setScanStatus(data.alreadyCheckedIn ? "already" : "success");
       stopScanning();
       load();
-    } catch (err: any) {
+    } catch {
       setFaceDetected(false);
-      // Only stop and show unknown on a definitive "not found" response
-      if (err?.message?.toLowerCase().includes("not found") ||
-          err?.message?.toLowerCase().includes("404")) {
-        setScanStatus("unknown");
-        stopScanning();
-      }
-      // Otherwise (network hiccup etc.) keep retrying silently
+      // keep retrying silently on any error
     } finally {
       isBusyRef.current = false;
     }
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     if (scanVisible && scanStatus === "scanning") {
@@ -214,6 +209,7 @@ export default function AttendanceScreen() {
   const retryScan = () => {
     setMatchedMember(null);
     setFaceDetected(false);
+    setScanAttempts(0);
     noMatchCountRef.current = 0;
     setScanStatus("scanning");
   };
@@ -407,7 +403,11 @@ export default function AttendanceScreen() {
                 <View style={styles.hintBox}>
                   {faceDetected ? (
                     <Text style={[styles.hintText, { color: "#22c55e" }]}>
-                      ● Processing... please wait
+                      ● Match found!
+                    </Text>
+                  ) : scanAttempts > 0 ? (
+                    <Text style={styles.hintText}>
+                      Scanning... ({scanAttempts}/{MAX_NO_MATCH_RETRIES})
                     </Text>
                   ) : (
                     <Text style={styles.hintText}>
@@ -451,7 +451,7 @@ export default function AttendanceScreen() {
               </View>
               <Text style={styles.resultTitle}>Face Not Recognized</Text>
               <Text style={styles.resultSub}>
-                This person is not registered as a member.
+                Face could not be matched. If this is an existing member, try better lighting or a different angle.
               </Text>
               <TouchableOpacity style={styles.addBtn} onPress={goAddMember} activeOpacity={0.85}>
                 <Text style={styles.addBtnText}>+ Add as New Member</Text>

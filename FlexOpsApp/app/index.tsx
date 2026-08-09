@@ -7,6 +7,7 @@ import {
   StatusBar,
   Text,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -77,12 +78,12 @@ export default function App() {
   if (isLoading) {
     return (
       <View style={styles.splash}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={colors.background}
+        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+        <Image
+          source={require("../assets/images/logo.png")}
+          style={{ width: 160, height: 160 }}
+          resizeMode="contain"
         />
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.splashText}>FlexOps</Text>
       </View>
     );
   }
@@ -103,7 +104,7 @@ export default function App() {
   const ActiveScreen = screenMap[screen];
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+    <SafeAreaView style={styles.safe} edges={["top", "left", "right", "bottom"]}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
       {/* Top Header */}
@@ -232,7 +233,6 @@ function getStyles(colors: any) {
       backgroundColor: colors.surface,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      paddingBottom: spacing.sm,
       paddingTop: spacing.xs,
       paddingHorizontal: spacing.sm,
     },

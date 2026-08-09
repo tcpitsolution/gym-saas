@@ -72,7 +72,7 @@ export default function Sidebar({ open, onClose }) {
 
   const sidebarContent = (
     <aside
-      className="w-56 min-h-screen flex flex-col shrink-0"
+      className="w-56 h-screen flex flex-col shrink-0"
       style={{
         background: "var(--bg-card)",
         borderRight: "1px solid var(--border-subtle)",

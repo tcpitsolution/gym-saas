@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { Lock, Play, Dumbbell, ChevronRight, X } from 'lucide-react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { Play, ChevronRight } from 'lucide-react-native';
 import { spacing, radius, typography } from '../theme/colors';
 import { useTheme } from '../store/themeStore';
 import { useNavigationStore } from '../store/navigationStore';
-import { useAuthStore } from '../store/authStore';
-import { Badge } from '../components';
 
 export type Exercise = {
   name: string;
@@ -14,6 +12,7 @@ export type Exercise = {
   equipment: string;
   premium: boolean;
   videoUrl: string;
+  imageUrl: string;
   steps: string[];
   tips: string[];
   commonMistakes: string[];
@@ -27,6 +26,7 @@ export const exercises: Exercise[] = [
     equipment: 'Barbell',
     premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=4Y2ZdHCOXok',
+    imageUrl: 'https://img.youtube.com/vi/4Y2ZdHCOXok/hqdefault.jpg',
     steps: [
       'Lie on bench with eyes directly under the bar.',
       'Grip bar slightly wider than shoulder width.',
@@ -43,8 +43,9 @@ export const exercises: Exercise[] = [
     category: 'Chest',
     sets: '3x10',
     equipment: 'Dumbbell',
-    premium: true,
+    premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=8iPEnn-ltC8',
+    imageUrl: 'https://img.youtube.com/vi/8iPEnn-ltC8/hqdefault.jpg',
     steps: [
       'Set bench to 30–45 degree incline.',
       'Hold dumbbells at shoulder level, palms facing forward.',
@@ -61,6 +62,7 @@ export const exercises: Exercise[] = [
     equipment: 'Bodyweight',
     premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=eGo4IYlbE5g',
+    imageUrl: 'https://img.youtube.com/vi/eGo4IYlbE5g/hqdefault.jpg',
     steps: [
       'Hang from bar with overhand grip, hands shoulder-width apart.',
       'Engage your core and squeeze shoulder blades together.',
@@ -75,8 +77,9 @@ export const exercises: Exercise[] = [
     category: 'Back',
     sets: '3x5',
     equipment: 'Barbell',
-    premium: true,
+    premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=op9kVnSso6Q',
+    imageUrl: 'https://img.youtube.com/vi/op9kVnSso6Q/hqdefault.jpg',
     steps: [
       'Stand with feet hip-width apart, bar over mid-foot.',
       'Hinge at hips and grip bar just outside your legs.',
@@ -94,6 +97,7 @@ export const exercises: Exercise[] = [
     equipment: 'Barbell',
     premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=ultWZbUMPL8',
+    imageUrl: 'https://img.youtube.com/vi/ultWZbUMPL8/hqdefault.jpg',
     steps: [
       'Place bar on upper traps, feet shoulder-width apart.',
       'Brace core and take a deep breath.',
@@ -109,8 +113,9 @@ export const exercises: Exercise[] = [
     category: 'Legs',
     sets: '3x12',
     equipment: 'Machine',
-    premium: true,
+    premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ',
+    imageUrl: 'https://img.youtube.com/vi/IZxyjW7MPJQ/hqdefault.jpg',
     steps: [
       'Sit in machine with back flat against pad.',
       'Place feet shoulder-width apart on platform.',
@@ -127,6 +132,7 @@ export const exercises: Exercise[] = [
     equipment: 'Dumbbell',
     premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=ykJmrZ5v0Oo',
+    imageUrl: 'https://img.youtube.com/vi/ykJmrZ5v0Oo/hqdefault.jpg',
     steps: [
       'Stand with dumbbells at sides, palms facing forward.',
       'Keep elbows pinned to your sides.',
@@ -143,6 +149,7 @@ export const exercises: Exercise[] = [
     equipment: 'Bodyweight',
     premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=ASdvN_XEl_c',
+    imageUrl: 'https://img.youtube.com/vi/ASdvN_XEl_c/hqdefault.jpg',
     steps: [
       'Place forearms on floor, elbows under shoulders.',
       'Extend legs behind you, toes on floor.',
@@ -157,8 +164,9 @@ export const exercises: Exercise[] = [
     category: 'Cardio',
     sets: '20 min',
     equipment: 'Treadmill',
-    premium: true,
+    premium: false,
     videoUrl: 'https://www.youtube.com/watch?v=ml6cT4AZdqI',
+    imageUrl: 'https://img.youtube.com/vi/ml6cT4AZdqI/hqdefault.jpg',
     steps: [
       'Warm up at easy pace for 3 minutes.',
       'Sprint at 80–90% max effort for 30 seconds.',
@@ -176,14 +184,10 @@ const categories = ['All', 'Chest', 'Back', 'Legs', 'Arms', 'Core', 'Cardio'];
 export default function ExercisesScreen() {
   const colors = useTheme();
   const { setScreen } = useNavigationStore();
-  const { user } = useAuthStore();
   const [cat, setCat] = useState('All');
-  const [lockModal, setLockModal] = useState(false);
   const filtered = exercises.filter(e => cat === 'All' || e.category === cat);
-  const exercisesEnabled = user?.features?.exercises !== false;
 
   const handlePress = (e: Exercise) => {
-    if (!exercisesEnabled || e.premium) { setLockModal(true); return; }
     setScreen('exerciseDetail', { exercise: e });
   };
 
@@ -205,33 +209,25 @@ export default function ExercisesScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: spacing.xl }}>
         {filtered.map(e => {
-          const locked = !exercisesEnabled || e.premium;
+          const locked = false;
           return (
             <TouchableOpacity
               key={e.name}
               activeOpacity={0.8}
-              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, opacity: locked ? 0.7 : 1 }]}
+              style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
               onPress={() => handlePress(e)}
             >
               <View style={styles.cardLeft}>
-                <View style={[styles.exIcon, { backgroundColor: locked ? 'rgba(255,90,54,0.1)' : colors.primaryDark }]}>
-                  {locked ? <Lock size={20} color={colors.primary} /> : <Dumbbell size={20} color={colors.primary} />}
-                </View>
+                <Image source={{ uri: e.imageUrl }} style={styles.exIcon} resizeMode="cover" />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.exName, { color: colors.textPrimary }]}>{e.name}</Text>
                   <Text style={[styles.exSub, { color: colors.textSecondary }]}>{e.equipment} · {e.sets}</Text>
                 </View>
               </View>
               <View style={styles.cardRight}>
-                {locked ? (
-                  <View style={[styles.playBtn, { backgroundColor: 'rgba(255,90,54,0.15)' }]}>
-                    <Lock size={15} color={colors.primary} />
-                  </View>
-                ) : (
-                  <View style={[styles.playBtn, { backgroundColor: colors.primary }]}>
+                <View style={[styles.playBtn, { backgroundColor: colors.primary }]}>
                     <Play size={15} color={colors.textPrimary} />
                   </View>
-                )}
                 <ChevronRight size={16} color={colors.textMuted} />
               </View>
             </TouchableOpacity>
@@ -239,30 +235,6 @@ export default function ExercisesScreen() {
         })}
       </ScrollView>
 
-      {/* Lock Modal */}
-      <Modal visible={lockModal} transparent animationType="fade" onRequestClose={() => setLockModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <TouchableOpacity style={styles.modalClose} onPress={() => setLockModal(false)}>
-              <X size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-            <View style={[styles.lockIcon, { backgroundColor: 'rgba(255,90,54,0.12)' }]}>
-              <Lock size={32} color={colors.primary} />
-            </View>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Feature Locked</Text>
-            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
-              This exercise is part of the premium plan. Contact your admin to unlock full access.
-            </Text>
-            <TouchableOpacity
-              style={[styles.modalBtn, { backgroundColor: colors.primary }]}
-              onPress={() => setLockModal(false)}
-              activeOpacity={0.8}
-            >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Contact Admin to Unlock</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -272,16 +244,9 @@ const styles = StyleSheet.create({
   tabText: { ...typography.body },
   card: { borderRadius: radius.card, padding: spacing.md, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
-  exIcon: { width: 44, height: 44, borderRadius: radius.icon, alignItems: 'center', justifyContent: 'center' },
+  exIcon: { width: 56, height: 56, borderRadius: radius.card, overflow: 'hidden' },
   exName: { ...typography.h3 },
   exSub: { ...typography.caption },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   playBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
-  modalBox: { width: '100%', maxWidth: 340, borderRadius: radius.card * 1.5, padding: spacing.lg, borderWidth: 1, alignItems: 'center' },
-  modalClose: { position: 'absolute', top: spacing.md, right: spacing.md },
-  lockIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
-  modalTitle: { ...typography.h2, marginBottom: spacing.xs, textAlign: 'center' },
-  modalDesc: { ...typography.body, textAlign: 'center', marginBottom: spacing.lg, lineHeight: 22 },
-  modalBtn: { width: '100%', paddingVertical: 14, borderRadius: radius.button, alignItems: 'center' },
 });

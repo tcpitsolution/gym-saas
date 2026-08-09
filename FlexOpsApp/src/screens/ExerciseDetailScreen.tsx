@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Image } from 'react-native';
 import { ArrowLeft, Play, ChevronDown, ChevronUp, CheckCircle, AlertTriangle, Lightbulb } from 'lucide-react-native';
 import { spacing, radius, typography } from '../theme/colors';
 import { useTheme } from '../store/themeStore';
@@ -36,15 +36,15 @@ export default function ExerciseDetailScreen() {
 
         {/* Video Card */}
         <TouchableOpacity
-          activeOpacity={exercise.premium ? 1 : 0.8}
+          activeOpacity={0.8}
           onPress={openVideo}
           style={[styles.videoCard, { backgroundColor: colors.surface, borderColor: colors.primary }]}
         >
-          <View style={[styles.videoThumb, { backgroundColor: colors.primaryDark }]}>
+          <Image source={{ uri: exercise.imageUrl }} style={styles.videoThumb} resizeMode="cover" />
+          <View style={styles.playOverlay}>
             <View style={[styles.playCircle, { backgroundColor: colors.primary }]}>
               <Play size={28} color="#fff" />
             </View>
-            <Text style={[styles.watchText, { color: colors.textSecondary }]}>Tap to watch on YouTube</Text>
           </View>
         </TouchableOpacity>
 
@@ -121,10 +121,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1 },
   headerTitle: { ...typography.h3, flex: 1, textAlign: 'center', marginHorizontal: spacing.sm },
   videoCard: { borderRadius: radius.card, borderWidth: 1, overflow: 'hidden' },
-  videoThumb: { height: 200, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  videoThumb: { height: 200, width: '100%' },
+  playOverlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.3)' },
   playCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  watchText: { ...typography.caption },
-  lockedText: { ...typography.caption, marginTop: spacing.xs },
   metaRow: { flexDirection: 'row', borderRadius: radius.card, borderWidth: 1, overflow: 'hidden' },
   metaItem: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
   metaLabel: { ...typography.caption, marginBottom: 2 },
