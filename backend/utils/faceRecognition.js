@@ -25,7 +25,7 @@ const path = require("path");
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 
-const MODELS_PATH = path.join(__dirname, "..", "models"); // adjust if your folder is elsewhere
+const MODELS_PATH = path.join(__dirname, "..", "models", "faceModels"); // adjust if your folder is elsewhere
 
 let modelsLoaded = false;
 
@@ -53,14 +53,21 @@ async function getFaceDescriptor(base64Image) {
   const buffer = Buffer.from(cleaned, "base64");
   const img = await canvas.loadImage(buffer);
 
+  // Resize to max 320px for speed
+  const MAX = 320;
+  const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  const cvs = canvas.createCanvas(w, h);
+  cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+
   const detection = await faceapi
-    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+    .detectSingleFace(cvs, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 }))
     .withFaceLandmarks()
     .withFaceDescriptor();
 
   if (!detection) return null;
 
-  // Float32Array -> plain array so it stores cleanly in MongoDB
   return Array.from(detection.descriptor);
 }
 

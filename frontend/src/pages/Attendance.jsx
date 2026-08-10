@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../api/axios";
 import Layout from "../components/Layout";
 import Animate from "../components/Animate";
@@ -70,21 +70,10 @@ export default function Attendance() {
     }
   };
 
-  const handleCheckout = async (memberId) => {
-    try {
-      await api.post("/attendance/checkout", { memberId });
-      await refreshTodayLogs();
-      await fetchData();
-      showMsg("Check-out recorded ✓");
-    } catch (err) {
-      showMsg(err.response?.data?.error || "Check-out failed", "error");
-    }
-  };
-
   const fmt = (date) =>
     date ? new Date(date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—";
 
-  const currentInside = useMemo(() => todayLogs.filter((l) => !l.checkOutAt).length, [todayLogs]);
+  const currentInside = todayLogs.length;
 
   return (
     <Layout>
@@ -198,23 +187,13 @@ export default function Attendance() {
                     <div>
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{log.memberId?.name || "—"}</p>
                       <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
-                        In: {fmt(log.checkInAt)}{" "}
-                        {log.checkOutAt && `· Out: ${fmt(log.checkOutAt)}`}
-                        {log.method ? ` · ${log.method}` : ""}
+                        In: {fmt(log.checkInAt)}{log.method ? ` · ${log.method}` : ""}
                       </p>
                     </div>
-                    {!log.checkOutAt ? (
-                      <button onClick={() => handleCheckout(log.memberId?._id)}
-                        className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
-                        style={{ background: "rgba(255,90,54,0.12)", color: "#FF5A36" }}>
-                        Check Out
-                      </button>
-                    ) : (
-                      <span className="text-xs px-2.5 py-1 rounded-full"
-                        style={{ background: "var(--bg-card-2)", color: "var(--text-faint)" }}>
-                        Done
-                      </span>
-                    )}
+                    <span className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                      style={{ background: "rgba(45,212,196,0.12)", color: "#2DD4C4" }}>
+                      ✓ Checked In
+                    </span>
                   </div>
                 ))}
               </div>

@@ -9,9 +9,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
+  Dimensions,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Search, UserCheck, ScanFace, X, RefreshCw } from "lucide-react-native";
+import { Search, UserCheck, ScanFace, X } from "lucide-react-native";
 import { spacing, radius, typography } from "../theme/colors";
 import { ListItem, SectionHeader } from "../components";
 import { attendanceApi, membersApi } from "../api";
@@ -19,8 +20,9 @@ import { useTheme } from "../store/themeStore";
 import { useNavigationStore } from "../store/navigationStore";
 import AppAlert from "../components/AppAlert";
 
-const SCAN_INTERVAL_MS = 3500;
-const MAX_NO_MATCH_RETRIES = 8;
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+const OVAL_W = SCREEN_W * 0.75;
+const OVAL_H = SCREEN_H * 0.45;
 
 export default function AttendanceScreen() {
   const colors = useTheme();
@@ -40,19 +42,23 @@ export default function AttendanceScreen() {
 
   // Camera
   const [scanVisible, setScanVisible] = useState(false);
-  const [facing, setFacing] = useState<"front" | "back">("front");
+  // Note: facing is fixed to "front" since face attendance always uses the
+  // front camera. Flip button was removed along with it — add back if needed.
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<any>(null);
-  const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isBusyRef = useRef(false);
-  const noMatchCountRef = useRef(0);
+  const scanDoneRef = useRef(false);
+  const cameraReadyRef = useRef(false);
 
-  type ScanStatus = "scanning" | "success" | "already" | "unknown";
+  type ScanStatus =
+    | "scanning" // camera preview showing, waiting for capture to start
+    | "processing" // photo taken, waiting for backend response
+    | "success"
+    | "already"
+    | "unknown";
   const [scanStatus, setScanStatus] = useState<ScanStatus>("scanning");
   const [matchedMember, setMatchedMember] = useState<any>(null);
-  // true when a face is detected in the current frame (turns oval green)
-  const [faceDetected, setFaceDetected] = useState(false);
-  const [scanAttempts, setScanAttempts] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // AppAlert
   const [alert, setAlert] = useState<{
@@ -107,7 +113,11 @@ export default function AttendanceScreen() {
     setManualSearch(memberName);
     try {
       await attendanceApi.checkin(memberId, "Manual");
-      showAlert("success", "Checked In!", `${memberName} checked in successfully.`);
+      showAlert(
+        "success",
+        "Checked In!",
+        `${memberName} checked in successfully.`,
+      );
       setManualSearch("");
       load();
     } catch (err: any) {
@@ -117,9 +127,14 @@ export default function AttendanceScreen() {
     }
   };
 
-  const suggestions = manualSearch.trim().length > 0
-    ? allMembers.filter(m => m.name.toLowerCase().includes(manualSearch.toLowerCase())).slice(0, 5)
-    : [];
+  const suggestions =
+    manualSearch.trim().length > 0
+      ? allMembers
+          .filter((m) =>
+            m.name.toLowerCase().includes(manualSearch.toLowerCase()),
+          )
+          .slice(0, 5)
+      : [];
 
   const openFaceScan = async () => {
     if (!permission?.granted) {
@@ -135,68 +150,67 @@ export default function AttendanceScreen() {
     }
     setMatchedMember(null);
     setScanStatus("scanning");
-    setFaceDetected(false);
-    setScanAttempts(0);
-    noMatchCountRef.current = 0;
+    isBusyRef.current = false;
+    scanDoneRef.current = false;
+    cameraReadyRef.current = false;
+    setIsProcessing(false);
     setScanVisible(true);
   };
 
-  const stopScanning = () => {
-    if (scanTimerRef.current) {
-      clearInterval(scanTimerRef.current);
-      scanTimerRef.current = null;
-    }
-  };
-
   const closeFaceScan = () => {
-    stopScanning();
+    isBusyRef.current = true; // stop any pending scan
+    scanDoneRef.current = true;
     setScanVisible(false);
-    setFaceDetected(false);
   };
 
-  const scanOnce = useCallback(async () => {
-    if (isBusyRef.current || !cameraRef.current) return;
+  // Takes exactly ONE photo and waits for the backend result.
+  // Will not run again until retryScan() is called manually.
+  const scanFace = useCallback(async () => {
+    if (isBusyRef.current || scanDoneRef.current || !cameraRef.current) return;
     isBusyRef.current = true;
+    setIsProcessing(true);
+    setScanStatus("processing");
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
+        quality: 0.25,
         base64: true,
-        skipProcessing: false,
+        skipProcessing: true,
       });
-      const dataUrl = `data:image/jpeg;base64,${photo.base64}`;
-
-      const data = await attendanceApi.faceScan(dataUrl);
+      const data = await attendanceApi.faceScan(
+        `data:image/jpeg;base64,${photo.base64}`,
+      );
 
       if (!data.matched) {
-        setFaceDetected(false);
-        noMatchCountRef.current += 1;
-        setScanAttempts(noMatchCountRef.current);
-        if (noMatchCountRef.current >= MAX_NO_MATCH_RETRIES) {
-          setScanStatus("unknown");
-          stopScanning();
-        }
+        // No match — stop here and show the "not recognized" screen.
+        // No automatic retry; user must tap "Try Again".
+        scanDoneRef.current = true;
+        setIsProcessing(false);
+        setScanStatus("unknown");
         return;
       }
 
-      setFaceDetected(true);
+      // Matched
+      scanDoneRef.current = true;
       setMatchedMember(data.member);
       setScanStatus(data.alreadyCheckedIn ? "already" : "success");
-      stopScanning();
       load();
     } catch {
-      setFaceDetected(false);
-      // keep retrying silently on any error
-    } finally {
-      isBusyRef.current = false;
+      // Network/backend error — let the user retry manually rather than
+      // looping automatically.
+      scanDoneRef.current = true;
+      setIsProcessing(false);
+      setScanStatus("unknown");
     }
   }, [load]);
 
-  useEffect(() => {
-    if (scanVisible && scanStatus === "scanning") {
-      scanTimerRef.current = setInterval(scanOnce, SCAN_INTERVAL_MS);
-    }
-    return stopScanning;
-  }, [scanVisible, scanStatus, scanOnce]);
+  // Fires once when the camera view is ready — this is what triggers the
+  // single automatic capture (replaces the old onFacesDetected / interval
+  // approach, which isn't supported by this expo-camera version).
+  const handleCameraReady = useCallback(() => {
+    if (cameraReadyRef.current) return; // guard against duplicate fires
+    cameraReadyRef.current = true;
+    scanFace();
+  }, [scanFace]);
 
   // Auto-close after success/already
   useEffect(() => {
@@ -206,12 +220,15 @@ export default function AttendanceScreen() {
     }
   }, [scanStatus]);
 
+  // Manually triggered by the "Try Again" button — takes exactly one more
+  // photo, no automatic repeats after this either.
   const retryScan = () => {
     setMatchedMember(null);
-    setFaceDetected(false);
-    setScanAttempts(0);
-    noMatchCountRef.current = 0;
+    isBusyRef.current = false;
+    scanDoneRef.current = false;
+    setIsProcessing(false);
     setScanStatus("scanning");
+    scanFace();
   };
 
   const goAddMember = () => {
@@ -304,23 +321,54 @@ export default function AttendanceScreen() {
               placeholder="Search member by name..."
               placeholderTextColor={colors.textMuted}
               value={manualSearch}
-              onChangeText={(t) => { setManualSearch(t); setShowSuggestions(true); }}
+              onChangeText={(t) => {
+                setManualSearch(t);
+                setShowSuggestions(true);
+              }}
               onFocus={() => setShowSuggestions(true)}
             />
-            {checkinLoading && <ActivityIndicator color={colors.primary} size="small" style={{ marginLeft: 8 }} />}
+            {checkinLoading && (
+              <ActivityIndicator
+                color={colors.primary}
+                size="small"
+                style={{ marginLeft: 8 }}
+              />
+            )}
           </View>
           {showSuggestions && suggestions.length > 0 && (
-            <View style={[styles.suggestionBox, { borderColor: colors.border, backgroundColor: colors.surfaceElevated }]}>
+            <View
+              style={[
+                styles.suggestionBox,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.surfaceElevated,
+                },
+              ]}
+            >
               {suggestions.map((m) => (
                 <TouchableOpacity
                   key={m._id}
-                  style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
+                  style={[
+                    styles.suggestionItem,
+                    { borderBottomColor: colors.border },
+                  ]}
                   onPress={() => handleManualCheckin(m._id, m.name)}
                   activeOpacity={0.7}
                 >
                   <UserCheck size={14} color={colors.primary} />
-                  <Text style={[styles.suggestionText, { color: colors.textPrimary }]}>{m.name}</Text>
-                  <Text style={[styles.suggestionSub, { color: colors.textMuted }]}>{m.phone}</Text>
+                  <Text
+                    style={[
+                      styles.suggestionText,
+                      { color: colors.textPrimary },
+                    ]}
+                  >
+                    {m.name}
+                  </Text>
+                  <Text
+                    style={[styles.suggestionSub, { color: colors.textMuted }]}
+                  >
+                    {m.phone}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -364,51 +412,42 @@ export default function AttendanceScreen() {
         onRequestClose={closeFaceScan}
       >
         <View style={styles.modalContainer}>
-
           {/* Camera view with oval overlay */}
-          {scanStatus === "scanning" && (
+          {(scanStatus === "scanning" || scanStatus === "processing") && (
             <>
               <CameraView
                 ref={cameraRef}
                 style={StyleSheet.absoluteFill}
-                facing={facing}
+                facing="front"
+                onCameraReady={handleCameraReady}
               />
 
-              {/* Dimmed overlay with oval cutout effect */}
               <View style={styles.overlay}>
-                {/* Camera flip button */}
-                <TouchableOpacity
-                  style={styles.flipBtn}
-                  onPress={() => setFacing(f => f === "front" ? "back" : "front")}
-                  activeOpacity={0.8}
-                >
-                  <RefreshCw size={20} color="#fff" />
-                  <Text style={styles.flipBtnText}>
-                    {facing === "front" ? "Back" : "Front"}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Face oval — green when face detected, orange otherwise */}
+                {/* Oval - green when processing, orange otherwise */}
                 <View
                   style={[
                     styles.faceFrame,
                     {
-                      borderColor: faceDetected ? "#22c55e" : colors.primary,
-                      shadowColor: faceDetected ? "#22c55e" : colors.primary,
+                      borderColor: isProcessing ? "#22c55e" : colors.primary,
+                      shadowColor: isProcessing ? "#22c55e" : colors.primary,
                     },
                   ]}
                 />
 
-                {/* Status hint */}
                 <View style={styles.hintBox}>
-                  {faceDetected ? (
-                    <Text style={[styles.hintText, { color: "#22c55e" }]}>
-                      ● Match found!
-                    </Text>
-                  ) : scanAttempts > 0 ? (
-                    <Text style={styles.hintText}>
-                      Scanning... ({scanAttempts}/{MAX_NO_MATCH_RETRIES})
-                    </Text>
+                  {isProcessing ? (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <ActivityIndicator size="small" color="#22c55e" />
+                      <Text style={[styles.hintText, { color: "#22c55e" }]}>
+                        Attendance processing...
+                      </Text>
+                    </View>
                   ) : (
                     <Text style={styles.hintText}>
                       Position your face inside the oval
@@ -422,7 +461,15 @@ export default function AttendanceScreen() {
           {/* Success */}
           {scanStatus === "success" && matchedMember && (
             <View style={styles.resultCenter}>
-              <View style={[styles.resultCircle, { backgroundColor: "rgba(34,197,94,0.15)", borderColor: "#22c55e" }]}>
+              <View
+                style={[
+                  styles.resultCircle,
+                  {
+                    backgroundColor: "rgba(34,197,94,0.15)",
+                    borderColor: "#22c55e",
+                  },
+                ]}
+              >
                 <Text style={[styles.resultIcon, { color: "#22c55e" }]}>✓</Text>
               </View>
               <Text style={styles.resultTitle}>Checked In!</Text>
@@ -434,29 +481,60 @@ export default function AttendanceScreen() {
           {/* Already checked in */}
           {scanStatus === "already" && matchedMember && (
             <View style={styles.resultCenter}>
-              <View style={[styles.resultCircle, { backgroundColor: "rgba(245,166,35,0.15)", borderColor: "#F5A623" }]}>
+              <View
+                style={[
+                  styles.resultCircle,
+                  {
+                    backgroundColor: "rgba(245,166,35,0.15)",
+                    borderColor: "#F5A623",
+                  },
+                ]}
+              >
                 <Text style={[styles.resultIcon, { color: "#F5A623" }]}>!</Text>
               </View>
               <Text style={styles.resultTitle}>Already Checked In</Text>
               <Text style={styles.resultName}>{matchedMember.name}</Text>
-              <Text style={styles.resultSub}>Attendance was already marked today</Text>
+              <Text style={styles.resultSub}>
+                Attendance was already marked today
+              </Text>
             </View>
           )}
 
-          {/* Unknown face */}
+          {/* Unknown face — no match found. Offers Add Member (for new
+              people) and Try Again (manual retry, no auto-loop). */}
           {scanStatus === "unknown" && (
             <View style={styles.resultCenter}>
-              <View style={[styles.resultCircle, { backgroundColor: "rgba(229,57,53,0.15)", borderColor: colors.error }]}>
-                <Text style={[styles.resultIcon, { color: colors.error }]}>?</Text>
+              <View
+                style={[
+                  styles.resultCircle,
+                  {
+                    backgroundColor: "rgba(229,57,53,0.15)",
+                    borderColor: colors.error,
+                  },
+                ]}
+              >
+                <Text style={[styles.resultIcon, { color: colors.error }]}>
+                  ?
+                </Text>
               </View>
               <Text style={styles.resultTitle}>Face Not Recognized</Text>
               <Text style={styles.resultSub}>
-                Face could not be matched. If this is an existing member, try better lighting or a different angle.
+                Face could not be matched. If this is an existing member, try
+                better lighting or a different angle. If they're new, add them
+                below.
               </Text>
-              <TouchableOpacity style={styles.addBtn} onPress={goAddMember} activeOpacity={0.85}>
+              <TouchableOpacity
+                style={styles.addBtn}
+                onPress={goAddMember}
+                activeOpacity={0.85}
+              >
                 <Text style={styles.addBtnText}>+ Add as New Member</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.retryBtn} onPress={retryScan} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.retryBtn}
+                onPress={retryScan}
+                activeOpacity={0.8}
+              >
                 <Text style={styles.retryBtnText}>Try Again</Text>
               </TouchableOpacity>
             </View>
@@ -475,7 +553,7 @@ export default function AttendanceScreen() {
         title={alert.title}
         message={alert.message}
         confirmLabel="OK"
-        onConfirm={() => setAlert(a => ({ ...a, visible: false }))}
+        onConfirm={() => setAlert((a) => ({ ...a, visible: false }))}
       />
     </>
   );
@@ -516,7 +594,11 @@ function getStyles(colors: any) {
       justifyContent: "center",
     },
     scanTitle: { ...typography.h3, color: colors.textPrimary },
-    scanSub: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+    scanSub: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
     ringCard: {
       backgroundColor: colors.surface,
       borderRadius: radius.card,
@@ -630,34 +712,15 @@ function getStyles(colors: any) {
       alignItems: "center",
       justifyContent: "center",
     },
-    flipBtn: {
-      position: "absolute",
-      top: 56,
-      right: 20,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: "rgba(0,0,0,0.55)",
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.2)",
-    },
-    flipBtnText: {
-      color: "#fff",
-      fontSize: 13,
-      fontWeight: "600",
-    },
     faceFrame: {
-      width: 240,
-      height: 300,
-      borderRadius: 140,
+      width: OVAL_W,
+      height: OVAL_H,
+      borderRadius: OVAL_W / 2,
       borderWidth: 3,
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.8,
-      shadowRadius: 12,
-      elevation: 8,
+      shadowOpacity: 0.9,
+      shadowRadius: 14,
+      elevation: 10,
     },
     hintBox: {
       marginTop: 24,
