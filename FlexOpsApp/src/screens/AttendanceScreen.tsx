@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
+  Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -12,7 +13,15 @@ import {
   Dimensions,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { Search, UserCheck, ScanFace, X } from "lucide-react-native";
+import {
+  Search,
+  UserCheck,
+  ScanFace,
+  X,
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle,
+} from "lucide-react-native";
 import { spacing, radius, typography } from "../theme/colors";
 import { ListItem, SectionHeader } from "../components";
 import { attendanceApi, membersApi } from "../api";
@@ -59,6 +68,11 @@ export default function AttendanceScreen() {
   const [scanStatus, setScanStatus] = useState<ScanStatus>("scanning");
   const [matchedMember, setMatchedMember] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Holds the still photo right after capture, so we can freeze the screen
+  // on that image instead of showing the live (moving) camera feed while
+  // the backend is processing. This is what fixes the "keeps looking live
+  // while I move" issue — after the shot, nothing on screen moves anymore.
+  const [capturedUri, setCapturedUri] = useState<string | null>(null);
 
   // AppAlert
   const [alert, setAlert] = useState<{
@@ -150,6 +164,7 @@ export default function AttendanceScreen() {
     }
     setMatchedMember(null);
     setScanStatus("scanning");
+    setCapturedUri(null);
     isBusyRef.current = false;
     scanDoneRef.current = false;
     cameraReadyRef.current = false;
@@ -176,9 +191,12 @@ export default function AttendanceScreen() {
         base64: true,
         skipProcessing: true,
       });
-      const data = await attendanceApi.faceScan(
-        `data:image/jpeg;base64,${photo.base64}`,
-      );
+      const uri = `data:image/jpeg;base64,${photo.base64}`;
+      // Switch from the live camera to this frozen still right away — the
+      // screen will no longer move at all while we wait for the backend,
+      // no matter how much the user shifts in front of the camera.
+      setCapturedUri(uri);
+      const data = await attendanceApi.faceScan(uri);
 
       if (!data.matched) {
         // No match — stop here and show the "not recognized" screen.
@@ -224,6 +242,7 @@ export default function AttendanceScreen() {
   // photo, no automatic repeats after this either.
   const retryScan = () => {
     setMatchedMember(null);
+    setCapturedUri(null);
     isBusyRef.current = false;
     scanDoneRef.current = false;
     setIsProcessing(false);
@@ -412,15 +431,28 @@ export default function AttendanceScreen() {
         onRequestClose={closeFaceScan}
       >
         <View style={styles.modalContainer}>
-          {/* Camera view with oval overlay */}
+          {/* Camera / frozen-still view with oval overlay */}
           {(scanStatus === "scanning" || scanStatus === "processing") && (
             <>
-              <CameraView
-                ref={cameraRef}
-                style={StyleSheet.absoluteFill}
-                facing="front"
-                onCameraReady={handleCameraReady}
-              />
+              {capturedUri ? (
+                // Photo already taken — freeze on this still image so the
+                // screen stays perfectly steady while the backend responds,
+                // regardless of how much the user moves in real life.
+                <Image
+                  source={{ uri: capturedUri }}
+                  style={StyleSheet.absoluteFill}
+                  resizeMode="cover"
+                />
+              ) : (
+                // No photo yet — show the live feed just long enough to
+                // take the single shot.
+                <CameraView
+                  ref={cameraRef}
+                  style={StyleSheet.absoluteFill}
+                  facing="front"
+                  onCameraReady={handleCameraReady}
+                />
+              )}
 
               <View style={styles.overlay}>
                 {/* Oval - green when processing, orange otherwise */}
@@ -470,7 +502,7 @@ export default function AttendanceScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.resultIcon, { color: "#22c55e" }]}>✓</Text>
+                <CheckCircle2 size={52} color="#22c55e" strokeWidth={2} />
               </View>
               <Text style={styles.resultTitle}>Checked In!</Text>
               <Text style={styles.resultName}>{matchedMember.name}</Text>
@@ -490,7 +522,7 @@ export default function AttendanceScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.resultIcon, { color: "#F5A623" }]}>!</Text>
+                <AlertTriangle size={48} color="#F5A623" strokeWidth={2} />
               </View>
               <Text style={styles.resultTitle}>Already Checked In</Text>
               <Text style={styles.resultName}>{matchedMember.name}</Text>
@@ -513,9 +545,7 @@ export default function AttendanceScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.resultIcon, { color: colors.error }]}>
-                  ?
-                </Text>
+                <HelpCircle size={48} color={colors.error} strokeWidth={2} />
               </View>
               <Text style={styles.resultTitle}>Face Not Recognized</Text>
               <Text style={styles.resultSub}>
