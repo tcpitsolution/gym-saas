@@ -17,6 +17,14 @@
 // 4. Use `getFaceDescriptor(base64Image)` wherever you need to turn a photo into
 //    a 128-length embedding array — both at member-enrollment time and at
 //    attendance-scan time.
+//
+// MATCHING: face-api.js descriptors are meant to be compared with EUCLIDEAN
+// DISTANCE (lower = more similar), not cosine similarity. Cosine similarity
+// scores stay high (often 0.6+) even for different people because the
+// embeddings live in a narrow cone of the vector space — using it as the
+// match metric causes false positives (wrong member matched). Use
+// `euclideanDistance()` below for matching; a distance under ~0.5-0.6 is
+// considered a match.
 
 const faceapi = require("face-api.js");
 const canvas = require("canvas");
@@ -59,10 +67,16 @@ async function getFaceDescriptor(base64Image) {
   const w = Math.round(img.width * scale);
   const h = Math.round(img.height * scale);
   const cvs = canvas.createCanvas(w, h);
-  cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+  cvs.getContext("2d").drawImage(img, 0, 0, w, h);
 
   const detection = await faceapi
-    .detectSingleFace(cvs, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 }))
+    .detectSingleFace(
+      cvs,
+      new faceapi.TinyFaceDetectorOptions({
+        inputSize: 160,
+        scoreThreshold: 0.4,
+      }),
+    )
     .withFaceLandmarks()
     .withFaceDescriptor();
 
@@ -71,6 +85,26 @@ async function getFaceDescriptor(base64Image) {
   return Array.from(detection.descriptor);
 }
 
+/**
+ * Euclidean distance between two descriptors — THIS is the correct metric
+ * for face-api.js face matching. Lower distance = more similar faces.
+ * Typical usable threshold: 0.5 (strict) to 0.6 (looser).
+ */
+function euclideanDistance(a, b) {
+  if (!a || !b || a.length !== b.length) return Infinity;
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    const diff = a[i] - b[i];
+    sum += diff * diff;
+  }
+  return Math.sqrt(sum);
+}
+
+/**
+ * Cosine similarity — kept for reference/backwards compatibility, but do
+ * NOT use this for deciding face matches (see note above the imports).
+ * Higher = more similar, range roughly -1 to 1.
+ */
 function cosineSimilarity(a, b) {
   if (!a || !b || a.length !== b.length) return -1;
   let dot = 0,
@@ -85,4 +119,9 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-module.exports = { loadModels, getFaceDescriptor, cosineSimilarity };
+module.exports = {
+  loadModels,
+  getFaceDescriptor,
+  cosineSimilarity,
+  euclideanDistance,
+};

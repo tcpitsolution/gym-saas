@@ -4,14 +4,16 @@ const Attendance = require("../models/Attendance");
 const Member = require("../models/Member");
 const {
   getFaceDescriptor,
-  cosineSimilarity,
+  euclideanDistance,
 } = require("../utils/faceRecognition");
 
 const router = express.Router();
 
 // Similarity threshold — higher = stricter match. 0.6 is a commonly used
 // starting point for face-api.js descriptors; tune after real testing.
-const MATCH_THRESHOLD = 0.6;
+// Euclidean distance threshold — LOWER distance means MORE similar.
+// 0.5 is stricter (fewer false matches), 0.6 is looser. Start at 0.5.
+const MATCH_THRESHOLD = 0.42;
 
 // ---------- Face-scan route (accepts base64 image from app) ----------
 // Called by the app's attendance screen. Detects the face in the live photo,
@@ -48,25 +50,37 @@ router.post("/face-scan", authMiddleware, async (req, res) => {
     }
 
     // 3. Find best match
+    // 3. Find best AND second-best match — lowest distance wins.
+    // Tracking the second-best lets us reject ambiguous matches: if the
+    // top two candidates are nearly equally close, the model isn't
+    // confident enough to say which one it really is.
     let bestMatch = null;
-    let bestScore = -1;
+    let bestDistance = Infinity;
+    let secondBestDistance = Infinity;
     for (const member of members) {
-      const score = cosineSimilarity(liveDescriptor, member.faceEmbedding);
-      if (score > bestScore) {
-        bestScore = score;
+      const distance = euclideanDistance(liveDescriptor, member.faceEmbedding);
+      if (distance < bestDistance) {
+        secondBestDistance = bestDistance;
+        bestDistance = distance;
         bestMatch = member;
+      } else if (distance < secondBestDistance) {
+        secondBestDistance = distance;
       }
     }
-    console.log(
-      `[face-scan] best score: ${bestScore.toFixed(3)} (member: ${bestMatch?.name})`,
-    );
 
-    if (!bestMatch || bestScore < MATCH_THRESHOLD) {
+    // Minimum gap required between best and second-best match. If the two
+    // closest members are this close to each other, the scan is treated as
+    // unreliable and rejected rather than guessing.
+    const MIN_CONFIDENCE_MARGIN = 0.08;
+    const isAmbiguous =
+      members.length > 1 &&
+      secondBestDistance - bestDistance < MIN_CONFIDENCE_MARGIN;
+
+    if (!bestMatch || bestDistance > MATCH_THRESHOLD || isAmbiguous) {
       return res
         .status(200)
         .json({ matched: false, reason: "below_threshold" });
     }
-
     // 4. Already checked in today?
     const today = new Date();
     today.setHours(0, 0, 0, 0);

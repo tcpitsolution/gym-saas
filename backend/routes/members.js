@@ -44,10 +44,18 @@ router.post("/", authMiddleware, async (req, res) => {
 
     // Agar photo hai lekin faceEmbedding nahi diya toh auto-generate karo
     let resolvedEmbedding = faceEmbedding;
+    let faceEnrollWarning = null;
     if (photo && !faceEmbedding) {
       try {
         resolvedEmbedding = await getFaceDescriptor(photo);
-      } catch (_) {}
+        if (!resolvedEmbedding) {
+          faceEnrollWarning =
+            "No face detected in the photo — face attendance won't work for this member until re-enrolled.";
+        }
+      } catch (_) {
+        faceEnrollWarning =
+          "Face processing failed — face attendance won't work for this member until re-enrolled.";
+      }
     }
 
     const member = await Member.create({
@@ -91,7 +99,7 @@ router.post("/", authMiddleware, async (req, res) => {
       sendEmail(member.email, subject, html);
     }
 
-    res.status(201).json(member);
+    res.status(201).json({ ...member.toObject(), faceEnrollWarning });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
