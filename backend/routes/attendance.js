@@ -77,9 +77,12 @@ router.post("/face-scan", authMiddleware, async (req, res) => {
       secondBestDistance - bestDistance < MIN_CONFIDENCE_MARGIN;
 
     if (!bestMatch || bestDistance > MATCH_THRESHOLD || isAmbiguous) {
-      return res
-        .status(200)
-        .json({ matched: false, reason: "below_threshold" });
+      return res.status(200).json({
+        matched: false,
+        reason: isAmbiguous ? "ambiguous_match" : "below_threshold",
+        closestDistance: Number(bestDistance.toFixed(3)),
+        closestMemberName: bestMatch?.name || null,
+      });
     }
     // 4. Already checked in today?
     const today = new Date();
